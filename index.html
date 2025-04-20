@@ -774,30 +774,32 @@ useEffect(() => {
                                             </button>
                                         </div>
                                         
-                                        {/* Filtres */}
-                                        <div className="mb-6 bg-slate-700 p-3 rounded-lg shadow-lg animate__animated animate__fadeIn">
-                                            <h3 className="text-blue-300 mb-2">Filtrer par:</h3>
-                                            <div className="flex space-x-4">
-                                                <button
-                                                    onClick={() => setFilter('tous')}
-                                                    className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'tous' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                                >
-                                                    Tous
-                                                </button>
-                                                <button
-                                                    onClick={() => setFilter('intérieur')}
-                                                    className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'intérieur' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                                >
-                                                    🏠 Intérieur
-                                                </button>
-                                                <button
-                                                    onClick={() => setFilter('extérieur')}
-                                                    className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'extérieur' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                                >
-                                                    🌳 Extérieur
-                                                </button>
-                                            </div>
-                                        </div>
+{/* Filtres - ne s'affiche pas dans la section "ajouter" */}
+{currentPage !== 'ajouter' && (
+    <div className="mb-6 bg-slate-700 p-3 rounded-lg shadow-lg animate__animated animate__fadeIn">
+        <h3 className="text-blue-300 mb-2">Filtrer par:</h3>
+        <div className="flex space-x-4">
+            <button
+                onClick={() => setFilter('tous')}
+                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'tous' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
+            >
+                Tous
+            </button>
+            <button
+                onClick={() => setFilter('intérieur')}
+                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'intérieur' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
+            >
+                🏠 Intérieur
+            </button>
+            <button
+                onClick={() => setFilter('extérieur')}
+                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'extérieur' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
+            >
+                🌳 Extérieur
+            </button>
+        </div>
+    </div>
+)}
                                         
                                         {/* Formulaire d'ajout de tâche */}
                                         {currentPage === 'ajouter' && (
