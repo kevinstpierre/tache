@@ -1,3 +1,6 @@
+Voici le code HTML complet corrigé, en remplaçant tous les fragments React (`<>...</>`) par des `<div>...</div>` :
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -739,10 +742,13 @@
                                 {loading ? (
                                     <LoadingSpinner />
                                 ) : (
-                                    <>
-                                                                                {/* Navigation */}
+                                    <div>
+                                        {/* Navigation */}
                                         <div className="flex flex-wrap justify-between mb-6 bg-slate-700 rounded-lg p-2 shadow-lg animate__animated animate__fadeIn">
                                             <button
+                                                Non, le code est tronqué dans ma réponse précédente à cause des limitations de longueur. Voici la suite du code corrigé :
+
+```javascript
                                                 onClick={() => setCurrentPage('ajouter')}
                                                 className={`px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
                                             >
@@ -956,7 +962,7 @@
                                                 )}
                                             </div>
                                         )}
-                                    </>
+                                    </div>
                                 )}
                             </div>
                         )}
