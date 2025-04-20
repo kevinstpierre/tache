@@ -103,6 +103,44 @@
             100% { transform: translateX(500%); }
         }
 
+        /* Styles pour le CAPTCHA */
+        .captcha-container {
+            position: relative;
+            background: #1E293B;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #4B5563;
+        }
+
+        .captcha-canvas {
+            width: 100%;
+            height: 80px;
+        }
+
+        .captcha-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(15, 23, 42, 0.3);
+            z-index: 0;
+        }
+
+        .captcha-text {
+            font-family: monospace;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transform: perspective(500px) rotateX(10deg);
+            user-select: none;
+        }
+
         /* Styles pour les sélecteurs de temps */
         .time-selector {
             display: grid;
@@ -132,7 +170,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         
         // Composant d'arrière-plan animé
         const AnimatedBackground = () => {
@@ -319,6 +357,138 @@
             );
         };
         
+        // Composant CAPTCHA
+        const Captcha = ({ onValidate }) => {
+            const [captchaText, setCaptchaText] = useState('');
+            const [userInput, setUserInput] = useState('');
+            const [isValid, setIsValid] = useState(null);
+            const canvasRef = useRef(null);
+            
+            // Générer un texte CAPTCHA aléatoire
+            const generateCaptcha = () => {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let result = '';
+                for (let i = 0; i < 6; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            };
+            
+            // Dessiner le CAPTCHA sur le canvas
+            const drawCaptcha = (text) => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                // Fond
+                ctx.fillStyle = '#1E293B';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Ajouter du bruit
+                for (let i = 0; i < 100; i++) {
+                    ctx.beginPath();
+                    ctx.arc(
+                        Math.random() * width,
+                        Math.random() * height,
+                        Math.random() * 2,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+                    ctx.fill();
+                }
+                
+                // Lignes aléatoires
+                for (let i = 0; i < 4; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(Math.random() * width, Math.random() * height);
+                    ctx.lineTo(Math.random() * width, Math.random() * height);
+                    ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.3)`;
+                    ctx.lineWidth = Math.random() * 2 + 1;
+                    ctx.stroke();
+                }
+            };
+            
+            // Vérifier le CAPTCHA
+            const validateCaptcha = () => {
+                if (userInput.toUpperCase() === captchaText) {
+                    setIsValid(true);
+                    onValidate(true);
+                } else {
+                    setIsValid(false);
+                    onValidate(false);
+                    // Générer un nouveau CAPTCHA
+                    resetCaptcha();
+                }
+            };
+            
+            // Réinitialiser le CAPTCHA
+            const resetCaptcha = () => {
+                const newCaptcha = generateCaptcha();
+                setCaptchaText(newCaptcha);
+                setUserInput('');
+                setIsValid(null);
+            };
+            
+            // Initialiser le CAPTCHA
+            useEffect(() => {
+                resetCaptcha();
+            }, []);
+            
+            // Redessiner le CAPTCHA quand le texte change
+            useEffect(() => {
+                if (captchaText) {
+                    drawCaptcha(captchaText);
+                }
+            }, [captchaText]);
+            
+            return (
+                <div className="mt-6">
+                    <label className="block mb-2 text-blue-200">Vérification CAPTCHA:</label>
+                    
+                    <div className="captcha-container mb-4">
+                        <canvas ref={canvasRef} className="captcha-canvas" width="300" height="80" />
+                        <div className="captcha-overlay">
+                            <div className="captcha-text">{captchaText}</div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                        <input
+                            type="text"
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            placeholder="Entrez le code ci-dessus"
+                            className={`flex-1 px-4 py-3 bg-slate-800 border rounded focus:outline-none focus:ring-2 ${
+                                isValid === null ? 'border-slate-600 focus:ring-blue-500' :
+                                isValid ? 'border-green-500 focus:ring-green-500' :
+                                'border-red-500 focus:ring-red-500'
+                            } text-gray-100`}
+                        />
+                        <button
+                            onClick={validateCaptcha}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300"
+                        >
+                            Vérifier
+                        </button>
+                        <button
+                            onClick={resetCaptcha}
+                            className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition-all duration-300"
+                        >
+                            🔄
+                        </button>
+                    </div>
+                    
+                    {isValid === false && (
+                        <p className="mt-2 text-red-400">Code incorrect. Veuillez réessayer.</p>
+                    )}
+                </div>
+            );
+        };
+        
         // Fonction pour convertir les minutes en format semaines, jours, heures, minutes
         const formatTime = (minutes) => {
             if (!minutes || isNaN(parseInt(minutes))) return "0 min";
@@ -356,6 +526,9 @@
             
             // État d'erreur de connexion
             const [loginError, setLoginError] = useState('');
+            
+            // État du CAPTCHA
+            const [captchaValid, setCaptchaValid] = useState(false);
             
             // États pour stocker les données
             const [tasks, setTasks] = useState(() => {
@@ -437,40 +610,14 @@
                 
                 return true;
             });
-
-            // Fonction pour exporter les données en fichier JSON
-            const exportData = () => {
-                const dataStr = JSON.stringify(tasks);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                
-                const exportFileDefaultName = 'taches-familiales.json';
-                
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
-            };
-
-            // Fonction pour importer des données depuis un fichier JSON
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const importedTasks = JSON.parse(e.target.result);
-                        setTasks(importedTasks);
-                        alert('Données importées avec succès!');
-                    } catch (error) {
-                        alert('Erreur lors de l\'importation des données.');
-                    }
-                };
-                reader.readAsText(file);
-            };
             
             // Fonction de connexion
             const handleLogin = () => {
+                if (!captchaValid) {
+                    setLoginError('Veuillez valider le CAPTCHA avant de vous connecter.');
+                    return;
+                }
+                
                 // Liste des utilisateurs autorisés
                 const allowedUsers = [
                     { email: 'francisst5@hotmail.com', password: 'SegaSega-2025' },
@@ -549,6 +696,10 @@
                                         />
                                     </div>
                                     
+                                    <div className="fade-in" style={{animationDelay: '0.3s'}}>
+                                        <Captcha onValidate={setCaptchaValid} />
+                                    </div>
+                                    
                                     {loginError && (
                                         <div className="bg-red-900 text-red-100 p-3 rounded text-center border border-red-700 animate__animated animate__headShake">
                                             {loginError}
@@ -557,50 +708,11 @@
                                     
                                     <button
                                         onClick={handleLogin}
-                                        className="w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in bg-blue-600 text-white hover:bg-blue-700 pulse-animation"
+                                        className={`w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in ${captchaValid ? 'bg-blue-600 text-white hover:bg-blue-700 pulse-animation' : 'bg-gray-600 text-gray-300 cursor-not-allowed'}`}
                                         style={{animationDelay: '0.4s'}}
+                                        disabled={!captchaValid}
                                     >
                                         Se connecter
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                {/* Bouton de déconnexion */}
-                                <div className="flex justify-end mb-4 animate__animated animate__fadeInRight">
-                                    <button
-                                        onClick={handleLogout}
-                                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all duration-300 shadow"
-                                    >
-                                        Déconnexion
-                                    </button>
-                                </div>
-                                
-                                {/* Navigation */}
-                                <div className="flex flex-wrap justify-center gap-3 mb-8 animate__animated animate__fadeInUp">
-                                    <button 
-                                        onClick={() => setCurrentPage('ajouter')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        ✏️ Ajouter une tâche
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('en-cours')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        🔄 Tâches en cours
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('non-commencé')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'non-commencé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        📋 Tâches non commencées
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('terminé')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'terminé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        ✅ Tâches terminées
                                     </button>
                                 </div>
                                 
@@ -762,26 +874,6 @@
                                     </div>
                                 )}
                                 
-                                {/* Import/Export des données */}
-                                <div className="mt-10 pt-6 border-t border-slate-600 flex flex-wrap justify-center gap-4 animate__animated animate__fadeIn">
-                                    <button 
-                                        onClick={exportData}
-                                        className="px-5 py-2 bg-slate-700 text-blue-300 rounded hover:bg-slate-600 transition-all duration-300 shadow border border-slate-600"
-                                    >
-                                        💾 Exporter les données
-                                    </button>
-                                    
-                                    <label className="px-5 py-2 bg-slate-700 text-blue-300 rounded hover:bg-slate-600 transition-all duration-300 shadow border border-slate-600 cursor-pointer">
-                                        📂 Importer des données
-                                        <input
-                                            type="file"
-                                            accept=".json"
-                                            onChange={importData}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                                
                                 {/* Footer */}
                                 <div className="mt-10 text-center text-gray-500 text-sm animate__animated animate__fadeIn">
                                     <p>Gestion des Tâches Familiales &copy; 2025</p>
@@ -797,3 +889,43 @@
     </script>
 </body>
 </html>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                {/* Bouton de déconnexion */}
+                                <div className="flex justify-end mb-4 animate__animated animate__fadeInRight">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all duration-300 shadow"
+                                    >
+                                        Déconnexion
+                                    </button>
+                                </div>
+                                
+                                {/* Navigation */}
+                                <div className="flex flex-wrap justify-center gap-3 mb-8 animate__animated animate__fadeInUp">
+                                    <button 
+                                        onClick={() => setCurrentPage('ajouter')}
+                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        ✏️ Ajouter une tâche
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('en-cours')}
+                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        🔄 Tâches en cours
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('non-commencé')}
+                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'non-commencé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        📋 Tâches non commencées
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('terminé')}
+                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'terminé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        ✅ Tâches terminées
+                                    </button>
