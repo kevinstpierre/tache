@@ -103,42 +103,28 @@
             100% { transform: translateX(500%); }
         }
 
-        /* Styles pour le CAPTCHA */
-        .captcha-container {
-            position: relative;
-            background: #1E293B;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #4B5563;
+        /* Styles pour les sélecteurs de temps */
+        .time-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
         }
-
-        .captcha-canvas {
-            width: 100%;
-            height: 80px;
-        }
-
-        .captcha-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        
+        .time-input {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(15, 23, 42, 0.3);
-            z-index: 0;
+            flex-direction: column;
         }
-
-        .captcha-text {
-            font-family: monospace;
-            font-size: 28px;
-            font-weight: bold;
-            letter-spacing: 8px;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            transform: perspective(500px) rotateX(10deg);
-            user-select: none;
+        
+        .time-input label {
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+        
+        .time-input select {
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
         }
     </style>
 </head>
@@ -146,7 +132,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
         
         // Composant d'arrière-plan animé
         const AnimatedBackground = () => {
@@ -222,134 +208,113 @@
             );
         };
         
-        // Composant CAPTCHA
-        const Captcha = ({ onValidate }) => {
-            const [captchaText, setCaptchaText] = useState('');
-            const [userInput, setUserInput] = useState('');
-            const [isValid, setIsValid] = useState(null);
-            const canvasRef = useRef(null);
-            
-            // Générer un texte CAPTCHA aléatoire
-            const generateCaptcha = () => {
-                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-                let result = '';
-                for (let i = 0; i < 6; i++) {
-                    result += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return result;
+        // Composant Sélecteur de Temps
+        const TimeSelector = ({ value, onChange }) => {
+            // Convertir les minutes en composants de temps
+            const calculateTimeComponents = (totalMinutes) => {
+                if (!totalMinutes) return { years: 0, weeks: 0, days: 0, hours: 0, minutes: 0 };
+                
+                const totalMins = parseInt(totalMinutes);
+                const years = Math.floor(totalMins / (365 * 24 * 60));
+                const weeks = Math.floor((totalMins % (365 * 24 * 60)) / (7 * 24 * 60));
+                const days = Math.floor((totalMins % (7 * 24 * 60)) / (24 * 60));
+                const hours = Math.floor((totalMins % (24 * 60)) / 60);
+                const minutes = totalMins % 60;
+                
+                return { years, weeks, days, hours, minutes };
             };
             
-            // Dessiner le CAPTCHA sur le canvas
-            const drawCaptcha = (text) => {
-                const canvas = canvasRef.current;
-                if (!canvas) return;
-                
-                const ctx = canvas.getContext('2d');
-                const width = canvas.width;
-                const height = canvas.height;
-                
-                // Fond
-                ctx.fillStyle = '#1E293B';
-                ctx.fillRect(0, 0, width, height);
-                
-                // Ajouter du bruit
-                for (let i = 0; i < 100; i++) {
-                    ctx.beginPath();
-                    ctx.arc(
-                        Math.random() * width,
-                        Math.random() * height,
-                        Math.random() * 2,
-                        0,
-                        Math.PI * 2
+            // État initial basé sur la valeur en minutes
+            const [timeComponents, setTimeComponents] = useState(() => calculateTimeComponents(value));
+            
+            // Mettre à jour lorsque la valeur change de l'extérieur
+            useEffect(() => {
+                setTimeComponents(calculateTimeComponents(value));
+            }, [value]);
+            
+            // Générer des nombres pour les sélecteurs (0-10)
+            const generateOptions = (max) => {
+                const options = [];
+                for (let i = 0; i <= max; i++) {
+                    options.push(
+                        <option key={i} value={i}>{i}</option>
                     );
-                    ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
-                    ctx.fill();
                 }
+                return options;
+            };
+            
+            // Calculer le total en minutes quand un composant change
+            const handleChange = (component, value) => {
+                const newComponents = { ...timeComponents, [component]: parseInt(value) };
+                setTimeComponents(newComponents);
                 
-                // Lignes aléatoires
-                for (let i = 0; i < 4; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(Math.random() * width, Math.random() * height);
-                    ctx.lineTo(Math.random() * width, Math.random() * height);
-                    ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.3)`;
-                    ctx.lineWidth = Math.random() * 2 + 1;
-                    ctx.stroke();
-                }
+                // Calculer le total en minutes
+                const totalMinutes = 
+                    newComponents.years * 365 * 24 * 60 +
+                    newComponents.weeks * 7 * 24 * 60 +
+                    newComponents.days * 24 * 60 +
+                    newComponents.hours * 60 +
+                    newComponents.minutes;
+                
+                onChange(totalMinutes);
             };
-            
-            // Vérifier le CAPTCHA
-            const validateCaptcha = () => {
-                if (userInput.toUpperCase() === captchaText) {
-                    setIsValid(true);
-                    onValidate(true);
-                } else {
-                    setIsValid(false);
-                    onValidate(false);
-                    // Générer un nouveau CAPTCHA
-                    resetCaptcha();
-                }
-            };
-            
-            // Réinitialiser le CAPTCHA
-            const resetCaptcha = () => {
-                const newCaptcha = generateCaptcha();
-                setCaptchaText(newCaptcha);
-                setUserInput('');
-                setIsValid(null);
-            };
-            
-            // Initialiser le CAPTCHA
-            useEffect(() => {
-                resetCaptcha();
-            }, []);
-            
-            // Redessiner le CAPTCHA quand le texte change
-            useEffect(() => {
-                if (captchaText) {
-                    drawCaptcha(captchaText);
-                }
-            }, [captchaText]);
             
             return (
-                <div className="mt-6">
-                    <label className="block mb-2 text-blue-200">Vérification CAPTCHA:</label>
-                    
-                    <div className="captcha-container mb-4">
-                        <canvas ref={canvasRef} className="captcha-canvas" width="300" height="80" />
-                        <div className="captcha-overlay">
-                            <div className="captcha-text">{captchaText}</div>
-                        </div>
+                <div className="time-selector mb-4">
+                    <div className="time-input">
+                        <label className="text-blue-200">Années</label>
+                        <select 
+                            value={timeComponents.years}
+                            onChange={(e) => handleChange('years', e.target.value)}
+                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                        >
+                            {generateOptions(10)}
+                        </select>
                     </div>
                     
-                    <div className="flex space-x-2">
-                        <input
-                            type="text"
-                            value={userInput}
-                            onChange={(e) => setUserInput(e.target.value)}
-                            placeholder="Entrez le code ci-dessus"
-                            className={`flex-1 px-4 py-3 bg-slate-800 border rounded focus:outline-none focus:ring-2 ${
-                                isValid === null ? 'border-slate-600 focus:ring-blue-500' :
-                                isValid ? 'border-green-500 focus:ring-green-500' :
-                                'border-red-500 focus:ring-red-500'
-                            } text-gray-100`}
-                        />
-                        <button
-                            onClick={validateCaptcha}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300"
+                    <div className="time-input">
+                        <label className="text-blue-200">Semaines</label>
+                        <select 
+                            value={timeComponents.weeks}
+                            onChange={(e) => handleChange('weeks', e.target.value)}
+                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                         >
-                            Vérifier
-                        </button>
-                        <button
-                            onClick={resetCaptcha}
-                            className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition-all duration-300"
-                        >
-                            🔄
-                        </button>
+                            {generateOptions(10)}
+                        </select>
                     </div>
                     
-                    {isValid === false && (
-                        <p className="mt-2 text-red-400">Code incorrect. Veuillez réessayer.</p>
-                    )}
+                    <div className="time-input">
+                        <label className="text-blue-200">Jours</label>
+                        <select 
+                            value={timeComponents.days}
+                            onChange={(e) => handleChange('days', e.target.value)}
+                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                        >
+                            {generateOptions(10)}
+                        </select>
+                    </div>
+                    
+                    <div className="time-input">
+                        <label className="text-blue-200">Heures</label>
+                        <select 
+                            value={timeComponents.hours}
+                            onChange={(e) => handleChange('hours', e.target.value)}
+                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                        >
+                            {generateOptions(10)}
+                        </select>
+                    </div>
+                    
+                    <div className="time-input">
+                        <label className="text-blue-200">Minutes</label>
+                        <select 
+                            value={timeComponents.minutes}
+                            onChange={(e) => handleChange('minutes', e.target.value)}
+                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                        >
+                            {generateOptions(59)}
+                        </select>
+                    </div>
                 </div>
             );
         };
@@ -361,12 +326,14 @@
             const mins = parseInt(minutes);
             if (mins < 60) return `${mins} min`;
             
-            const weeks = Math.floor(mins / (7 * 24 * 60));
+            const years = Math.floor(mins / (365 * 24 * 60));
+            const weeks = Math.floor((mins % (365 * 24 * 60)) / (7 * 24 * 60));
             const days = Math.floor((mins % (7 * 24 * 60)) / (24 * 60));
             const hours = Math.floor((mins % (24 * 60)) / 60);
             const remainingMinutes = mins % 60;
             
             let result = "";
+            if (years > 0) result += `${years} année${years > 1 ? 's' : ''} `;
             if (weeks > 0) result += `${weeks} semaine${weeks > 1 ? 's' : ''} `;
             if (days > 0) result += `${days} jour${days > 1 ? 's' : ''} `;
             if (hours > 0) result += `${hours} heure${hours > 1 ? 's' : ''} `;
@@ -389,9 +356,6 @@
             
             // État d'erreur de connexion
             const [loginError, setLoginError] = useState('');
-            
-            // État du CAPTCHA
-            const [captchaValid, setCaptchaValid] = useState(false);
             
             // États pour stocker les données
             const [tasks, setTasks] = useState(() => {
@@ -507,11 +471,6 @@
             
             // Fonction de connexion
             const handleLogin = () => {
-                if (!captchaValid) {
-                    setLoginError('Veuillez valider le CAPTCHA avant de vous connecter.');
-                    return;
-                }
-                
                 // Liste des utilisateurs autorisés
                 const allowedUsers = [
                     { email: 'francisst5@hotmail.com', password: 'SegaSega-2025' },
@@ -536,6 +495,11 @@
             const handleLogout = () => {
                 setIsAuthenticated(false);
                 localStorage.removeItem('authStatus');
+            };
+            
+            // Mise à jour du temps estimé
+            const handleEstimatedTimeChange = (time) => {
+                setNewTask({...newTask, estimatedTime: time});
             };
             
             // Couleurs pour les priorités
@@ -585,10 +549,6 @@
                                         />
                                     </div>
                                     
-                                    <div className="fade-in" style={{animationDelay: '0.3s'}}>
-                                        <Captcha onValidate={setCaptchaValid} />
-                                    </div>
-                                    
                                     {loginError && (
                                         <div className="bg-red-900 text-red-100 p-3 rounded text-center border border-red-700 animate__animated animate__headShake">
                                             {loginError}
@@ -597,9 +557,8 @@
                                     
                                     <button
                                         onClick={handleLogin}
-                                        className={`w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in ${captchaValid ? 'bg-blue-600 text-white hover:bg-blue-700 pulse-animation' : 'bg-gray-600 text-gray-300 cursor-not-allowed'}`}
+                                        className="w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in bg-blue-600 text-white hover:bg-blue-700 pulse-animation"
                                         style={{animationDelay: '0.4s'}}
-                                        disabled={!captchaValid}
                                     >
                                         Se connecter
                                     </button>
@@ -685,6 +644,17 @@
                                                 />
                                             </div>
                                             
+                                            <div className="fade-in" style={{animationDelay: '0.2s'}}>
+                                                <label className="block mb-2 text-blue-200">Description:</label>
+                                                <textarea
+                                                    value={newTask.description}
+                                                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                    rows="3"
+                                                    placeholder="Description de la tâche"
+                                                />
+                                            </div>
+                                            
                                             <div className="fade-in" style={{animationDelay: '0.3s'}}>
                                                 <label className="block mb-2 text-blue-200">Emplacement:</label>
                                                 <select
@@ -698,17 +668,16 @@
                                             </div>
                                             
                                             <div className="fade-in" style={{animationDelay: '0.4s'}}>
-                                                <label className="block mb-2 text-blue-200">Temps estimé (en minutes):</label>
-                                                <input
-                                                    type="number"
-                                                    value={newTask.estimatedTime}
-                                                    onChange={(e) => setNewTask({...newTask, estimatedTime: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                    placeholder="Exemple: 60 (pour 1 heure)"
+                                                <label className="block mb-2 text-blue-200">Temps estimé:</label>
+                                                
+                                                <TimeSelector 
+                                                    value={newTask.estimatedTime} 
+                                                    onChange={handleEstimatedTimeChange}
                                                 />
+                                                
                                                 {newTask.estimatedTime && (
                                                     <p className="mt-2 text-sm text-blue-300">
-                                                        Temps estimé: {formatTime(newTask.estimatedTime)}
+                                                        Temps total estimé: {formatTime(newTask.estimatedTime)}
                                                     </p>
                                                 )}
                                             </div>
@@ -828,14 +797,3 @@
     </script>
 </body>
 </html>
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.2s'}}>
-                                                <label className="block mb-2 text-blue-200">Description:</label>
-                                                <textarea
-                                                    value={newTask.description}
-                                                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                    rows="3"
-                                                    placeholder="Description de la tâche"
-                                                />
