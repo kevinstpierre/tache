@@ -662,4 +662,138 @@
                                                     onChange={(e) => setNewTask({...newTask, location: e.target.value})}
                                                     className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                                                 >
-                                                    <option value="intérieur">🏠 Intéri
+                                                    <option value="intérieur">🏠 Intérieur</option>
+                                                    <option value="extérieur">🌳 Extérieur</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div className="fade-in" style={{animationDelay: '0.4s'}}>
+                                                <label className="block mb-2 text-blue-200">Temps estimé:</label>
+                                                
+                                                <TimeSelector 
+                                                    value={newTask.estimatedTime} 
+                                                    onChange={handleEstimatedTimeChange}
+                                                />
+                                                
+                                                {newTask.estimatedTime && (
+                                                    <p className="mt-2 text-sm text-blue-300">
+                                                        Temps total estimé: {formatTime(newTask.estimatedTime)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            
+                                            <button
+                                                onClick={handleAddTask}
+                                                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in pulse-animation"
+                                                style={{animationDelay: '0.5s'}}
+                                            >
+                                                ✨ Ajouter la tâche
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Liste des tâches */}
+                                {currentPage !== 'ajouter' && (
+                                    <div className="animate__animated animate__fadeIn">
+                                        <h2 className="text-2xl font-semibold mb-6 text-blue-300">
+                                            {currentPage === 'en-cours' ? '🔄 Tâches en cours' : 
+                                             currentPage === 'non-commencé' ? '📋 Tâches non commencées' : '✅ Tâches terminées'}
+                                            {filter !== 'tous' && ` - ${filter === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}`}
+                                        </h2>
+                                        
+                                        {filteredTasks.length === 0 ? (
+                                            <div className="text-center text-gray-400 py-8 bg-slate-700 rounded-lg border border-slate-600">
+                                                <p className="text-xl">Aucune tâche à afficher</p>
+                                                <p className="mt-2">Ajoutez des tâches pour les voir ici</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {filteredTasks.map((task, index) => (
+                                                    <div 
+                                                        key={task.id} 
+                                                        className={`border border-slate-600 rounded-lg p-5 bg-slate-700 shadow-lg task-item ${animated[task.id] ? 'animate__animated animate__fadeInUp' : ''}`}
+                                                        style={{animationDelay: `${index * 0.1}s`}}
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center">
+                                                                    <h3 className="font-medium text-xl text-blue-300">{task.title}</h3>
+                                                                    <span className={`ml-3 text-xs px-3 py-1 rounded-full ${getStatusColor(task.status)}`}>
+                                                                        {task.status === 'non-commencé' ? 'Non commencé' : 
+                                                                         task.status === 'en-cours' ? 'En cours' : 'Terminé'}
+                                                                    </span>
+                                                                </div>
+                                                                
+                                                                <p className="text-gray-300 mt-2">{task.description}</p>
+                                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                                    <span className={`text-xs px-3 py-1 rounded-full ${task.location === 'intérieur' ? 'bg-blue-900 text-blue-200' : 'bg-green-900 text-green-200'}`}>
+                                                                        {task.location === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}
+                                                                    </span>
+                                                                    {task.estimatedTime && (
+                                                                        <span className="text-xs px-3 py-1 rounded-full bg-purple-900 text-purple-200">
+                                                                            ⏱️ {formatTime(task.estimatedTime)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="ml-4 flex flex-col space-y-2">
+                                                                <select
+                                                                    value={task.status}
+                                                                    onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                                                                    className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                                >
+                                                                    <option value="non-commencé">⏸️ Non commencé</option>
+                                                                    <option value="en-cours">▶️ En cours</option>
+                                                                    <option value="terminé">✅ Terminé</option>
+                                                                </select>
+                                                                <button
+                                                                    onClick={() => handleDeleteTask(task.id)}
+                                                                    className="px-3 py-2 bg-red-600 text-red-100 rounded hover:bg-red-700 text-sm transition-all duration-300"
+                                                                >
+                                                                    🗑️ Supprimer
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* Import/Export des données */}
+                                <div className="mt-10 pt-6 border-t border-slate-600 flex flex-wrap justify-center gap-4 animate__animated animate__fadeIn">
+                                    <button 
+                                        onClick={exportData}
+                                        className="px-5 py-2 bg-slate-700 text-blue-300 rounded hover:bg-slate-600 transition-all duration-300 shadow border border-slate-600"
+                                    >
+                                        💾 Exporter les données
+                                    </button>
+                                    
+                                    <label className="px-5 py-2 bg-slate-700 text-blue-300 rounded hover:bg-slate-600 transition-all duration-300 shadow border border-slate-600 cursor-pointer">
+                                        📂 Importer des données
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            onChange={importData}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                                
+                                {/* Footer */}
+                                <div className="mt-10 text-center text-gray-500 text-sm animate__animated animate__fadeIn">
+                                    <p>Gestion des Tâches Familiales &copy; 2025</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<TaskManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>
