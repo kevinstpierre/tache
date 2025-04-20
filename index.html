@@ -504,16 +504,16 @@
                 setLoading(false);
             };
             
-            // Périodiquement vérifier les mises à jour
-            useEffect(() => {
-                if (!isAuthenticated) return;
-                
-                const intervalId = setInterval(() => {
-                    loadTasks();
-                }, 60000);
-                
-                return () => clearInterval(intervalId);
-            }, [isAuthenticated]);
+// Périodiquement vérifier les mises à jour (chaque minute)
+useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const intervalId = setInterval(() => {
+        loadTasks();
+    }, 60000); // 60000 ms = 1 minute
+    
+    return () => clearInterval(intervalId);
+}, [isAuthenticated]);
             
             // Animation pour les nouveaux éléments
             useEffect(() => {
