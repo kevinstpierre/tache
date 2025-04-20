@@ -126,6 +126,51 @@
             border-radius: 4px;
             text-align: center;
         }
+        
+        /* Style pour le spinner de chargement */
+        .loading-spinner {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .loading-spinner div {
+            position: absolute;
+            top: 33px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #3B82F6;
+            animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        }
+        .loading-spinner div:nth-child(1) {
+            left: 8px;
+            animation: loading-spinner1 0.6s infinite;
+        }
+        .loading-spinner div:nth-child(2) {
+            left: 8px;
+            animation: loading-spinner2 0.6s infinite;
+        }
+        .loading-spinner div:nth-child(3) {
+            left: 32px;
+            animation: loading-spinner2 0.6s infinite;
+        }
+        .loading-spinner div:nth-child(4) {
+            left: 56px;
+            animation: loading-spinner3 0.6s infinite;
+        }
+        @keyframes loading-spinner1 {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+        @keyframes loading-spinner3 {
+            0% { transform: scale(1); }
+            100% { transform: scale(0); }
+        }
+        @keyframes loading-spinner2 {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(24px, 0); }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-gray-100 min-h-screen">
@@ -133,6 +178,58 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+        
+        // Utilisation de JSONbin.io comme API de stockage
+        // Créez un ID unique pour votre application
+        const API_KEY = "$2b$10$Vqc5BdyYQrT0o9Z.bYmJy.m/QZcJ.hf8aNRRkX1JyucQO.TVKZqfW"; // Remplacez par votre API key de JSONbin
+        const BIN_ID = "659c1d6e266cfc3fde6a2aa9"; // Remplacez par votre BIN ID
+        
+        // API pour sauvegarder et charger les données
+        const API = {
+            async saveTasks(tasks) {
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': API_KEY,
+                        },
+                        body: JSON.stringify({ tasks })
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('Erreur lors de la sauvegarde des tâches:', await response.text());
+                        return false;
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Erreur lors de la sauvegarde des tâches:', error);
+                    return false;
+                }
+            },
+            
+            async loadTasks() {
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                        headers: {
+                            'X-Master-Key': API_KEY,
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('Erreur lors du chargement des tâches:', await response.text());
+                        return [];
+                    }
+                    
+                    const data = await response.json();
+                    return data.record.tasks || [];
+                } catch (error) {
+                    console.error('Erreur lors du chargement des tâches:', error);
+                    return [];
+                }
+            }
+        };
         
         // Composant d'arrière-plan animé
         const AnimatedBackground = () => {
@@ -207,6 +304,16 @@
                 </div>
             );
         };
+
+        // Spinner de chargement
+        const LoadingSpinner = () => (
+            <div className="flex flex-col items-center justify-center py-10">
+                <div className="loading-spinner">
+                    <div></div><div></div><div></div><div></div>
+                </div>
+                <p className="mt-4 text-blue-300">Chargement des données...</p>
+            </div>
+        );
         
         // Composant Sélecteur de Temps
         const TimeSelector = ({ value, onChange }) => {
@@ -358,11 +465,9 @@
             const [loginError, setLoginError] = useState('');
             
             // États pour stocker les données
-            const [tasks, setTasks] = useState(() => {
-                // Récupérer les tâches du localStorage s'il y en a
-                const savedTasks = localStorage.getItem('familyTasks');
-                return savedTasks ? JSON.parse(savedTasks) : [];
-            });
+            const [tasks, setTasks] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'success', 'error'
             
             const [newTask, setNewTask] = useState({
                 title: '',
@@ -375,6 +480,40 @@
             const [currentPage, setCurrentPage] = useState('ajouter');
             const [filter, setFilter] = useState('tous');
             const [animated, setAnimated] = useState({});
+            
+            // Charger les tâches depuis l'API au démarrage
+            useEffect(() => {
+                if (isAuthenticated) {
+                    loadTasks();
+                }
+            }, [isAuthenticated]);
+            
+            // Fonction pour charger les tâches depuis l'API
+            const loadTasks = async () => {
+                setLoading(true);
+                
+                try {
+                    const loadedTasks = await API.loadTasks();
+                    setTasks(loadedTasks);
+                    setSyncStatus('success');
+                } catch (error) {
+                    console.error('Erreur lors du chargement des tâches:', error);
+                    setSyncStatus('error');
+                }
+                
+                setLoading(false);
+            };
+            
+            // Périodiquement vérifier les mises à jour (chaque 30 secondes)
+            useEffect(() => {
+                if (!isAuthenticated) return;
+                
+                const intervalId = setInterval(() => {
+                    loadTasks();
+                }, 30000);
+                
+                return () => clearInterval(intervalId);
+            }, [isAuthenticated]);
             
             // Animation pour les nouveaux éléments
             useEffect(() => {
@@ -389,17 +528,31 @@
                 }
             }, [tasks]);
 
-            // Sauvegarder les tâches dans localStorage quand elles changent
-            useEffect(() => {
-                localStorage.setItem('familyTasks', JSON.stringify(tasks));
-            }, [tasks]);
+            // Sauvegarder les tâches vers l'API lorsqu'elles changent
+            const saveTasks = async (updatedTasks) => {
+                setSyncStatus('syncing');
+                
+                try {
+                    const success = await API.saveTasks(updatedTasks);
+                    if (success) {
+                        setSyncStatus('success');
+                    } else {
+                        setSyncStatus('error');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la sauvegarde des tâches:', error);
+                    setSyncStatus('error');
+                }
+            };
 
             // Gestionnaire pour ajouter une nouvelle tâche
-            const handleAddTask = () => {
+            const handleAddTask = async () => {
                 if (!newTask.title.trim()) return;
                 
                 const newTaskId = Date.now();
-                setTasks([...tasks, { ...newTask, id: newTaskId }]);
+                const updatedTasks = [...tasks, { ...newTask, id: newTaskId }];
+                
+                setTasks(updatedTasks);
                 setNewTask({
                     title: '',
                     description: '',
@@ -410,19 +563,31 @@
                 
                 // Ajouter l'animation pour la nouvelle tâche
                 setAnimated({...animated, [newTaskId]: true});
+                
+                // Sauvegarder vers l'API
+                await saveTasks(updatedTasks);
             };
 
             // Gestionnaire pour changer le statut d'une tâche
-            const handleStatusChange = (id, newStatus) => {
-                setTasks(tasks.map(task => 
+            const handleStatusChange = async (id, newStatus) => {
+                const updatedTasks = tasks.map(task => 
                     task.id === id ? { ...task, status: newStatus } : task
-                ));
+                );
+                
+                setTasks(updatedTasks);
+                
+                // Sauvegarder vers l'API
+                await saveTasks(updatedTasks);
             };
             
             // Gestionnaire pour supprimer une tâche
-            const handleDeleteTask = (id) => {
+            const handleDeleteTask = async (id) => {
                 if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
-                    setTasks(tasks.filter(task => task.id !== id));
+                    const updatedTasks = tasks.filter(task => task.id !== id);
+                    setTasks(updatedTasks);
+                    
+                    // Sauvegarder vers l'API
+                    await saveTasks(updatedTasks);
                 }
             };
 
@@ -437,37 +602,6 @@
                 
                 return true;
             });
-
-            // Fonction pour exporter les données en fichier JSON
-            const exportData = () => {
-                const dataStr = JSON.stringify(tasks);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                
-                const exportFileDefaultName = 'taches-familiales.json';
-                
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
-            };
-
-            // Fonction pour importer des données depuis un fichier JSON
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const importedTasks = JSON.parse(e.target.result);
-                        setTasks(importedTasks);
-                        alert('Données importées avec succès!');
-                    } catch (error) {
-                        alert('Erreur lors de l\'importation des données.');
-                    }
-                };
-                reader.readAsText(file);
-            };
             
             // Fonction de connexion
             const handleLogin = () => {
@@ -486,6 +620,7 @@
                     setIsAuthenticated(true);
                     localStorage.setItem('authStatus', 'true');
                     setLoginError('');
+                    loadTasks(); // Charger les tâches après connexion
                 } else {
                     setLoginError('Email ou mot de passe incorrect');
                 }
@@ -510,6 +645,31 @@
                     case 'terminé': return 'bg-green-600 text-green-100';
                     default: return 'bg-gray-600 text-gray-100';
                 }
+            };
+            
+            // Afficher le statut de synchronisation
+            const renderSyncStatus = () => {
+                if (syncStatus === 'syncing') {
+                    return (
+                        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg animate-pulse">
+                            🔄 Synchronisation...
+                        </div>
+                    );
+                } else if (syncStatus === 'success') {
+                    return (
+                        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg">
+                            ✅ Synchronisé
+                        </div>
+                    );
+                } else if (syncStatus === 'error') {
+                    return (
+                        <div className="fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-md shadow-lg">
+                            ❌ Erreur de synchronisation
+                        </div>
+                    );
+                }
+                
+                return null;
             };
 
             return (
@@ -537,7 +697,228 @@
                                             placeholder="Votre email"
                                         />
                                     </div>
-                                    
+                                
+                                {loading ? (
+                                    <LoadingSpinner />
+                                ) : (
+                                    <>
+                                        {/* Navigation */}
+                                        <div className="flex flex-wrap justify-center gap-3 mb-8 animate__animated animate__fadeInUp">
+                                            <button 
+                                                onClick={() => setCurrentPage('ajouter')}
+                                                className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                            >
+                                                ✏️ Ajouter une tâche
+                                            </button>
+                                            <button 
+                                                onClick={() => setCurrentPage('en-cours')}
+                                                className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                            >
+                                                🔄 Tâches en cours
+                                            </button>
+                                            <button 
+                                                onClick={() => setCurrentPage('non-commencé')}
+                                                className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'non-commencé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                            >
+                                                📋 Tâches non commencées
+                                            </button>
+                                            <button 
+                                                onClick={() => setCurrentPage('terminé')}
+                                                className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'terminé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                            >
+                                                ✅ Tâches terminées
+                                            </button>
+                                        </div>
+                                        
+                                        {/* Filtres par emplacement */}
+                                        {currentPage !== 'ajouter' && (
+                                            <div className="flex justify-center gap-3 mb-8 animate__animated animate__fadeIn">
+                                                <button 
+                                                    onClick={() => setFilter('tous')}
+                                                    className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'tous' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                                >
+                                                    🔍 Tous
+                                                </button>
+                                                <button 
+                                                    onClick={() => setFilter('intérieur')}
+                                                    className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'intérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                                >
+                                                    🏠 Intérieur
+                                                </button>
+                                                <button 
+                                                    onClick={() => setFilter('extérieur')}
+                                                    className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'extérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                                >
+                                                    🌳 Extérieur
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Formulaire d'ajout de tâche */}
+                                        {currentPage === 'ajouter' && (
+                                            <div className="bg-slate-700 p-6 rounded-lg mb-8 border border-slate-600 shadow-xl animate__animated animate__fadeIn">
+                                                <h2 className="text-2xl font-semibold mb-6 text-blue-300">✨ Ajouter une nouvelle tâche</h2>
+                                                <div className="space-y-5">
+                                                    <div className="fade-in" style={{animationDelay: '0.1s'}}>
+                                                        <label className="block mb-2 text-blue-200">Titre:</label>
+                                                        <input
+                                                            type="text"
+                                                            value={newTask.title}
+                                                            onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                            placeholder="Nom de la tâche"
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div className="fade-in" style={{animationDelay: '0.2s'}}>
+                                                        <label className="block mb-2 text-blue-200">Description:</label>
+                                                        <textarea
+                                                            value={newTask.description}
+                                                            onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                            rows="3"
+                                                            placeholder="Description de la tâche"
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div className="fade-in" style={{animationDelay: '0.3s'}}>
+                                                        <label className="block mb-2 text-blue-200">Emplacement:</label>
+                                                        <select
+                                                            value={newTask.location}
+                                                            onChange={(e) => setNewTask({...newTask, location: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                        >
+                                                            <option value="intérieur">🏠 Intérieur</option>
+                                                            <option value="extérieur">🌳 Extérieur</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div className="fade-in" style={{animationDelay: '0.4s'}}>
+                                                        <label className="block mb-2 text-blue-200">Temps estimé:</label>
+                                                        
+                                                        <TimeSelector 
+                                                            value={newTask.estimatedTime} 
+                                                            onChange={handleEstimatedTimeChange}
+                                                        />
+                                                        
+                                                        {newTask.estimatedTime && (
+                                                            <p className="mt-2 text-sm text-blue-300">
+                                                                Temps total estimé: {formatTime(newTask.estimatedTime)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <button
+                                                        onClick={handleAddTask}
+                                                        className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in pulse-animation"
+                                                        style={{animationDelay: '0.5s'}}
+                                                    >
+                                                        ✨ Ajouter la tâche
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Liste des tâches */}
+                                        {currentPage !== 'ajouter' && (
+                                            <div className="animate__animated animate__fadeIn">
+                                                <h2 className="text-2xl font-semibold mb-6 text-blue-300">
+                                                    {currentPage === 'en-cours' ? '🔄 Tâches en cours' : 
+                                                     currentPage === 'non-commencé' ? '📋 Tâches non commencées' : '✅ Tâches terminées'}
+                                                    {filter !== 'tous' && ` - ${filter === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}`}
+                                                </h2>
+                                                
+                                                {filteredTasks.length === 0 ? (
+                                                    <div className="text-center text-gray-400 py-8 bg-slate-700 rounded-lg border border-slate-600">
+                                                        <p className="text-xl">Aucune tâche à afficher</p>
+                                                        <p className="mt-2">Ajoutez des tâches pour les voir ici</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {filteredTasks.map((task, index) => (
+                                                            <div 
+                                                                key={task.id} 
+                                                                className={`border border-slate-600 rounded-lg p-5 bg-slate-700 shadow-lg task-item ${animated[task.id] ? 'animate__animated animate__fadeInUp' : ''}`}
+                                                                style={{animationDelay: `${index * 0.1}s`}}
+                                                            >
+                                                                <div className="flex justify-between items-start">
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center">
+                                                                            <h3 className="font-medium text-xl text-blue-300">{task.title}</h3>
+                                                                            <span className={`ml-3 text-xs px-3 py-1 rounded-full ${getStatusColor(task.status)}`}>
+                                                                                {task.status === 'non-commencé' ? 'Non commencé' : 
+                                                                                 task.status === 'en-cours' ? 'En cours' : 'Terminé'}
+                                                                            </span>
+                                                                        </div>
+                                                                        
+                                                                        <p className="text-gray-300 mt-2">{task.description}</p>
+                                                                        <div className="mt-3 flex flex-wrap gap-2">
+                                                                            <span className={`text-xs px-3 py-1 rounded-full ${task.location === 'intérieur' ? 'bg-blue-900 text-blue-200' : 'bg-green-900 text-green-200'}`}>
+                                                                                {task.location === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}
+                                                                            </span>
+                                                                            {task.estimatedTime && (
+                                                                                <span className="text-xs px-3 py-1 rounded-full bg-purple-900 text-purple-200">
+                                                                                    ⏱️ {formatTime(task.estimatedTime)}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="ml-4 flex flex-col space-y-2">
+                                                                        <select
+                                                                            value={task.status}
+                                                                            onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                                                                            className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                                        >
+                                                                            <option value="non-commencé">⏸️ Non commencé</option>
+                                                                            <option value="en-cours">▶️ En cours</option>
+                                                                            <option value="terminé">✅ Terminé</option>
+                                                                        </select>
+                                                                        <button
+                                                                            onClick={() => handleDeleteTask(task.id)}
+                                                                            className="px-3 py-2 bg-red-600 text-red-100 rounded hover:bg-red-700 text-sm transition-all duration-300"
+                                                                        >
+                                                                            🗑️ Supprimer
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Bouton de rafraîchissement manuel */}
+                                        <div className="mt-8 flex justify-center">
+                                            <button 
+                                                onClick={loadTasks}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300 flex items-center gap-2"
+                                                disabled={loading}
+                                            >
+                                                🔄 Rafraîchir les tâches
+                                            </button>
+                                        </div>
+                                        
+                                        {/* Footer */}
+                                        <div className="mt-10 text-center text-gray-500 text-sm animate__animated animate__fadeIn">
+                                            <p>Gestion des Tâches Familiales &copy; 2025</p>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {/* Statut de synchronisation */}
+                                {renderSyncStatus()}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<TaskManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>    
                                     <div className="fade-in" style={{animationDelay: '0.2s'}}>
                                         <label className="block mb-2 text-blue-200">Mot de passe:</label>
                                         <input
@@ -575,225 +956,3 @@
                                         Déconnexion
                                     </button>
                                 </div>
-                                
-                                {/* Navigation */}
-                                <div className="flex flex-wrap justify-center gap-3 mb-8 animate__animated animate__fadeInUp">
-                                    <button 
-                                        onClick={() => setCurrentPage('ajouter')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        ✏️ Ajouter une tâche
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('en-cours')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        🔄 Tâches en cours
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('non-commencé')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'non-commencé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        📋 Tâches non commencées
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('terminé')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'terminé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        ✅ Tâches terminées
-                                    </button>
-                                </div>
-                                
-                                {/* Filtres par emplacement */}
-                                {currentPage !== 'ajouter' && (
-                                    <div className="flex justify-center gap-3 mb-8 animate__animated animate__fadeIn">
-                                        <button 
-                                            onClick={() => setFilter('tous')}
-                                            className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'tous' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                        >
-                                            🔍 Tous
-                                        </button>
-                                        <button 
-                                            onClick={() => setFilter('intérieur')}
-                                            className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'intérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                        >
-                                            🏠 Intérieur
-                                        </button>
-                                        <button 
-                                            onClick={() => setFilter('extérieur')}
-                                            className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'extérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                        >
-                                            🌳 Extérieur
-                                        </button>
-                                    </div>
-                                )}
-                                
-                                {/* Formulaire d'ajout de tâche */}
-                                {currentPage === 'ajouter' && (
-                                    <div className="bg-slate-700 p-6 rounded-lg mb-8 border border-slate-600 shadow-xl animate__animated animate__fadeIn">
-                                        <h2 className="text-2xl font-semibold mb-6 text-blue-300">✨ Ajouter une nouvelle tâche</h2>
-                                        <div className="space-y-5">
-                                            <div className="fade-in" style={{animationDelay: '0.1s'}}>
-                                                <label className="block mb-2 text-blue-200">Titre:</label>
-                                                <input
-                                                    type="text"
-                                                    value={newTask.title}
-                                                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                    placeholder="Nom de la tâche"
-                                                />
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.2s'}}>
-                                                <label className="block mb-2 text-blue-200">Description:</label>
-                                                <textarea
-                                                    value={newTask.description}
-                                                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                    rows="3"
-                                                    placeholder="Description de la tâche"
-                                                />
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.3s'}}>
-                                                <label className="block mb-2 text-blue-200">Emplacement:</label>
-                                                <select
-                                                    value={newTask.location}
-                                                    onChange={(e) => setNewTask({...newTask, location: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                >
-                                                    <option value="intérieur">🏠 Intérieur</option>
-                                                    <option value="extérieur">🌳 Extérieur</option>
-                                                </select>
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.4s'}}>
-                                                <label className="block mb-2 text-blue-200">Temps estimé:</label>
-                                                
-                                                <TimeSelector 
-                                                    value={newTask.estimatedTime} 
-                                                    onChange={handleEstimatedTimeChange}
-                                                />
-                                                
-                                                {newTask.estimatedTime && (
-                                                    <p className="mt-2 text-sm text-blue-300">
-                                                        Temps total estimé: {formatTime(newTask.estimatedTime)}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            
-                                            <button
-                                                onClick={handleAddTask}
-                                                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in pulse-animation"
-                                                style={{animationDelay: '0.5s'}}
-                                            >
-                                                ✨ Ajouter la tâche
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {/* Liste des tâches */}
-                                {currentPage !== 'ajouter' && (
-                                    <div className="animate__animated animate__fadeIn">
-                                        <h2 className="text-2xl font-semibold mb-6 text-blue-300">
-                                            {currentPage === 'en-cours' ? '🔄 Tâches en cours' : 
-                                             currentPage === 'non-commencé' ? '📋 Tâches non commencées' : '✅ Tâches terminées'}
-                                            {filter !== 'tous' && ` - ${filter === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}`}
-                                        </h2>
-                                        
-                                        {filteredTasks.length === 0 ? (
-                                            <div className="text-center text-gray-400 py-8 bg-slate-700 rounded-lg border border-slate-600">
-                                                <p className="text-xl">Aucune tâche à afficher</p>
-                                                <p className="mt-2">Ajoutez des tâches pour les voir ici</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {filteredTasks.map((task, index) => (
-                                                    <div 
-                                                        key={task.id} 
-                                                        className={`border border-slate-600 rounded-lg p-5 bg-slate-700 shadow-lg task-item ${animated[task.id] ? 'animate__animated animate__fadeInUp' : ''}`}
-                                                        style={{animationDelay: `${index * 0.1}s`}}
-                                                    >
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center">
-                                                                    <h3 className="font-medium text-xl text-blue-300">{task.title}</h3>
-                                                                    <span className={`ml-3 text-xs px-3 py-1 rounded-full ${getStatusColor(task.status)}`}>
-                                                                        {task.status === 'non-commencé' ? 'Non commencé' : 
-                                                                         task.status === 'en-cours' ? 'En cours' : 'Terminé'}
-                                                                    </span>
-                                                                </div>
-                                                                
-                                                                <p className="text-gray-300 mt-2">{task.description}</p>
-                                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                                    <span className={`text-xs px-3 py-1 rounded-full ${task.location === 'intérieur' ? 'bg-blue-900 text-blue-200' : 'bg-green-900 text-green-200'}`}>
-                                                                        {task.location === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}
-                                                                    </span>
-                                                                    {task.estimatedTime && (
-                                                                        <span className="text-xs px-3 py-1 rounded-full bg-purple-900 text-purple-200">
-                                                                            ⏱️ {formatTime(task.estimatedTime)}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="ml-4 flex flex-col space-y-2">
-                                                                <select
-                                                                    value={task.status}
-                                                                    onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                                                                    className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                                >
-                                                                    <option value="non-commencé">⏸️ Non commencé</option>
-                                                                    <option value="en-cours">▶️ En cours</option>
-                                                                    <option value="terminé">✅ Terminé</option>
-                                                                </select>
-                                                                <button
-                                                                    onClick={() => handleDeleteTask(task.id)}
-                                                                    className="px-3 py-2 bg-red-600 text-red-100 rounded hover:bg-red-700 text-sm transition-all duration-300"
-                                                                >
-                                                                    🗑️ Supprimer
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {/* Import/Export des données */}
-                                <div className="mt-10 pt-6 border-t border-slate-600 flex flex-wrap justify-center gap-4 animate__animated animate__fadeIn">
-                                    <button 
-                                        onClick={exportData}
-                                        className="px-5 py-2 bg-slate-700 text-blue-300 rounded hover:bg-slate-600 transition-all duration-300 shadow border border-slate-600"
-                                    >
-                                        💾 Exporter les données
-                                    </button>
-                                    
-                                    <label className="px-5 py-2 bg-slate-700 text-blue-300 rounded hover:bg-slate-600 transition-all duration-300 shadow border border-slate-600 cursor-pointer">
-                                        📂 Importer des données
-                                        <input
-                                            type="file"
-                                            accept=".json"
-                                            onChange={importData}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                                
-                                {/* Footer */}
-                                <div className="mt-10 text-center text-gray-500 text-sm animate__animated animate__fadeIn">
-                                    <p>Gestion des Tâches Familiales &copy; 2025</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        ReactDOM.render(<TaskManager />, document.getElementById('root'));
-    </script>
-</body>
-</html>
