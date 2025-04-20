@@ -510,7 +510,7 @@ useEffect(() => {
     
     const intervalId = setInterval(() => {
         loadTasks();
-    }, 30000);
+    }, 60000);
     
     return () => clearInterval(intervalId);
 }, [isAuthenticated]);
