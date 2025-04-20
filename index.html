@@ -504,13 +504,13 @@
                 setLoading(false);
             };
             
-// Périodiquement vérifier les mises à jour (chaque minute)
+// Périodiquement vérifier les mises à jour (chaque 30 secondes)
 useEffect(() => {
     if (!isAuthenticated) return;
     
     const intervalId = setInterval(() => {
         loadTasks();
-    }, 60000); // 60000 ms = 1 minute
+    }, 30000);
     
     return () => clearInterval(intervalId);
 }, [isAuthenticated]);
