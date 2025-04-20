@@ -599,6 +599,7 @@ const filteredTasks = tasks.filter(task => {
     
     if (filter === 'maison' && task.location !== 'maison') return false;
     if (filter === 'garage' && task.location !== 'garage') return false;
+    if (filter === 'automobile' && task.location !== 'automobile') return false;
     if (filter === 'extérieur' && task.location !== 'extérieur') return false;
     
     return true;
@@ -799,6 +800,12 @@ const filteredTasks = tasks.filter(task => {
                 🔧 Garage
             </button>
             <button
+                onClick={() => setFilter('automobile')}
+                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'automobile' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
+            >
+                🚗 Automobile
+            </button>
+            <button
                 onClick={() => setFilter('extérieur')}
                 className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'extérieur' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
             >
@@ -834,7 +841,7 @@ const filteredTasks = tasks.filter(task => {
                                                         ></textarea>
                                                     </div>
                                                     
-                                                   <div>
+<div>
     <label className="block mb-2 text-blue-200">Lieu:</label>
     <div className="flex space-x-4">
         <label className="inline-flex items-center">
@@ -856,6 +863,16 @@ const filteredTasks = tasks.filter(task => {
                 className="form-radio text-blue-500"
             />
             <span className="ml-2 text-gray-100">🔧 Garage</span>
+        </label>
+        <label className="inline-flex items-center">
+            <input
+                type="radio"
+                value="automobile"
+                checked={newTask.location === 'automobile'}
+                onChange={() => setNewTask({...newTask, location: 'automobile'})}
+                className="form-radio text-blue-500"
+            />
+            <span className="ml-2 text-gray-100">🚗 Automobile</span>
         </label>
         <label className="inline-flex items-center">
             <input
@@ -924,9 +941,10 @@ const filteredTasks = tasks.filter(task => {
                                                                 </div>
                                                                 
                                                                 <div className="flex items-center text-sm text-gray-400 mb-4">
-                                                                    <span className="mr-4">
+<span className="mr-4">
     {task.location === 'maison' ? '🏠 Maison' : 
      task.location === 'garage' ? '🔧 Garage' : 
+     task.location === 'automobile' ? '🚗 Automobile' : 
      '🌳 Extérieur'}
 </span>
                                                                     <span>
