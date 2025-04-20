@@ -4,13 +4,394 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Tâches Familiales</title>
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
     <div id="root"></div>
-    <script type="text/babel" src="app.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        const TaskManager = () => {
+            // État d'authentification
+            const [isAuthenticated, setIsAuthenticated] = useState(() => {
+                return localStorage.getItem('authStatus') === 'true';
+            });
+            
+            // État de connexion
+            const [loginData, setLoginData] = useState({
+                email: '',
+                password: ''
+            });
+            
+            // État d'erreur de connexion
+            const [loginError, setLoginError] = useState('');
+            
+            // États pour stocker les données
+            const [tasks, setTasks] = useState(() => {
+                // Récupérer les tâches du localStorage s'il y en a
+                const savedTasks = localStorage.getItem('familyTasks');
+                return savedTasks ? JSON.parse(savedTasks) : [];
+            });
+            
+            const [newTask, setNewTask] = useState({
+                title: '',
+                description: '',
+                location: 'intérieur', // 'intérieur' ou 'extérieur'
+                estimatedTime: '',
+                status: 'non-commencé', // 'non-commencé', 'en-cours', 'terminé'
+            });
+            
+            const [currentPage, setCurrentPage] = useState('ajouter');
+            const [filter, setFilter] = useState('tous');
+
+            // Sauvegarder les tâches dans localStorage quand elles changent
+            useEffect(() => {
+                localStorage.setItem('familyTasks', JSON.stringify(tasks));
+            }, [tasks]);
+
+            // Gestionnaire pour ajouter une nouvelle tâche
+            const handleAddTask = () => {
+                if (!newTask.title.trim()) return;
+                
+                setTasks([...tasks, { ...newTask, id: Date.now() }]);
+                setNewTask({
+                    title: '',
+                    description: '',
+                    location: 'intérieur',
+                    estimatedTime: '',
+                    status: 'non-commencé',
+                });
+            };
+
+            // Gestionnaire pour changer le statut d'une tâche
+            const handleStatusChange = (id, newStatus) => {
+                setTasks(tasks.map(task => 
+                    task.id === id ? { ...task, status: newStatus } : task
+                ));
+            };
+
+            // Filtrer les tâches selon la page actuelle et les filtres
+            const filteredTasks = tasks.filter(task => {
+                if (currentPage === 'en-cours' && task.status !== 'en-cours') return false;
+                if (currentPage === 'non-commencé' && task.status !== 'non-commencé') return false;
+                if (currentPage === 'terminé' && task.status !== 'terminé') return false;
+                
+                if (filter === 'intérieur' && task.location !== 'intérieur') return false;
+                if (filter === 'extérieur' && task.location !== 'extérieur') return false;
+                
+                return true;
+            });
+
+            // Fonction pour exporter les données en fichier JSON
+            const exportData = () => {
+                const dataStr = JSON.stringify(tasks);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = 'taches-familiales.json';
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            };
+
+            // Fonction pour importer des données depuis un fichier JSON
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedTasks = JSON.parse(e.target.result);
+                        setTasks(importedTasks);
+                        alert('Données importées avec succès!');
+                    } catch (error) {
+                        alert('Erreur lors de l\'importation des données.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            // Fonction de connexion
+            const handleLogin = () => {
+                // Liste des utilisateurs autorisés
+                const allowedUsers = [
+                    { email: 'francisst5@hotmail.com', password: 'SegaSega-2025' },
+                    { email: 'stpkevpro2024@gmail.com', password: 'SegaSega-2025' }
+                ];
+                
+                // Vérifier si l'utilisateur est autorisé
+                const isAllowed = allowedUsers.some(
+                    user => user.email === loginData.email && user.password === loginData.password
+                );
+                
+                if (isAllowed) {
+                    setIsAuthenticated(true);
+                    localStorage.setItem('authStatus', 'true');
+                    setLoginError('');
+                } else {
+                    setLoginError('Email ou mot de passe incorrect');
+                }
+            };
+            
+            // Fonction de déconnexion
+            const handleLogout = () => {
+                setIsAuthenticated(false);
+                localStorage.removeItem('authStatus');
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100 p-4">
+                    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+                        <h1 className="text-2xl font-bold text-center mb-6">Gestion des Tâches Familiales</h1>
+                        
+                        {/* Page de connexion */}
+                        {!isAuthenticated ? (
+                            <div className="max-w-md mx-auto bg-gray-50 p-6 rounded-lg">
+                                <h2 className="text-xl font-semibold mb-4 text-center">Connexion</h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block mb-1">Email:</label>
+                                        <input
+                                            type="email"
+                                            value={loginData.email}
+                                            onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded"
+                                            placeholder="Votre email"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block mb-1">Mot de passe:</label>
+                                        <input
+                                            type="password"
+                                            value={loginData.password}
+                                            onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded"
+                                            placeholder="Votre mot de passe"
+                                        />
+                                    </div>
+                                    
+                                    {loginError && (
+                                        <div className="bg-red-100 text-red-700 p-2 rounded text-center">
+                                            {loginError}
+                                        </div>
+                                    )}
+                                    
+                                    <button
+                                        onClick={handleLogin}
+                                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                                    >
+                                        Se connecter
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                {/* Bouton de déconnexion */}
+                                <div className="flex justify-end mb-4">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="px-3 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                                    >
+                                        Déconnexion
+                                    </button>
+                                </div>
+                                
+                                {/* Navigation */}
+                                <div className="flex flex-wrap justify-center gap-2 mb-6">
+                                    <button 
+                                        onClick={() => setCurrentPage('ajouter')}
+                                        className={`px-4 py-2 rounded ${currentPage === 'ajouter' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                    >
+                                        Ajouter une tâche
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('en-cours')}
+                                        className={`px-4 py-2 rounded ${currentPage === 'en-cours' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                    >
+                                        Tâches en cours
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('non-commencé')}
+                                        className={`px-4 py-2 rounded ${currentPage === 'non-commencé' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                    >
+                                        Tâches non commencées
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage('terminé')}
+                                        className={`px-4 py-2 rounded ${currentPage === 'terminé' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                    >
+                                        Tâches terminées
+                                    </button>
+                                </div>
+                                
+                                {/* Filtres par emplacement */}
+                                {currentPage !== 'ajouter' && (
+                                    <div className="flex justify-center gap-2 mb-6">
+                                        <button 
+                                            onClick={() => setFilter('tous')}
+                                            className={`px-3 py-1 rounded ${filter === 'tous' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                                        >
+                                            Tous
+                                        </button>
+                                        <button 
+                                            onClick={() => setFilter('intérieur')}
+                                            className={`px-3 py-1 rounded ${filter === 'intérieur' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                                        >
+                                            Intérieur
+                                        </button>
+                                        <button 
+                                            onClick={() => setFilter('extérieur')}
+                                            className={`px-3 py-1 rounded ${filter === 'extérieur' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                                        >
+                                            Extérieur
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                {/* Formulaire d'ajout de tâche */}
+                                {currentPage === 'ajouter' && (
+                                    <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                                        <h2 className="text-xl font-semibold mb-4">Ajouter une nouvelle tâche</h2>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-1">Titre:</label>
+                                                <input
+                                                    type="text"
+                                                    value={newTask.title}
+                                                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                                                    className="w-full px-3 py-2 border rounded"
+                                                    placeholder="Nom de la tâche"
+                                                />
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block mb-1">Description:</label>
+                                                <textarea
+                                                    value={newTask.description}
+                                                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                                                    className="w-full px-3 py-2 border rounded"
+                                                    rows="3"
+                                                    placeholder="Description de la tâche"
+                                                />
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block mb-1">Emplacement:</label>
+                                                <select
+                                                    value={newTask.location}
+                                                    onChange={(e) => setNewTask({...newTask, location: e.target.value})}
+                                                    className="w-full px-3 py-2 border rounded"
+                                                >
+                                                    <option value="intérieur">Intérieur</option>
+                                                    <option value="extérieur">Extérieur</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block mb-1">Temps estimé (en minutes):</label>
+                                                <input
+                                                    type="number"
+                                                    value={newTask.estimatedTime}
+                                                    onChange={(e) => setNewTask({...newTask, estimatedTime: e.target.value})}
+                                                    className="w-full px-3 py-2 border rounded"
+                                                    placeholder="60"
+                                                />
+                                            </div>
+                                            
+                                            <button
+                                                onClick={handleAddTask}
+                                                className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                                            >
+                                                Ajouter la tâche
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Liste des tâches */}
+                                {currentPage !== 'ajouter' && (
+                                    <div>
+                                        <h2 className="text-xl font-semibold mb-4">
+                                            {currentPage === 'en-cours' ? 'Tâches en cours' : 
+                                            currentPage === 'non-commencé' ? 'Tâches non commencées' : 'Tâches terminées'}
+                                            {filter !== 'tous' && ` - ${filter}`}
+                                        </h2>
+                                        
+                                        {filteredTasks.length === 0 ? (
+                                            <p className="text-center text-gray-500 py-4">Aucune tâche à afficher</p>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {filteredTasks.map((task) => (
+                                                    <div key={task.id} className="border rounded p-4 bg-gray-50">
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <h3 className="font-medium">{task.title}</h3>
+                                                                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                                    <span className={`text-xs px-2 py-1 rounded ${task.location === 'intérieur' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                                                                        {task.location}
+                                                                    </span>
+                                                                    {task.estimatedTime && (
+                                                                        <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
+                                                                            {task.estimatedTime} min
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="ml-4">
+                                                                <select
+                                                                    value={task.status}
+                                                                    onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                                                                    className="px-2 py-1 border rounded text-sm"
+                                                                >
+                                                                    <option value="non-commencé">Non commencé</option>
+                                                                    <option value="en-cours">En cours</option>
+                                                                    <option value="terminé">Terminé</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* Import/Export des données */}
+                                <div className="mt-8 pt-4 border-t flex flex-wrap justify-center gap-4">
+                                    <button 
+                                        onClick={exportData}
+                                        className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                                    >
+                                        Exporter les données
+                                    </button>
+                                    
+                                    <label className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm cursor-pointer">
+                                        Importer des données
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            onChange={importData}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<TaskManager />, document.getElementById('root'));
+    </script>
 </body>
 </html>
