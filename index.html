@@ -1,13 +1,133 @@
-<!DOCTYPE html>
+{/* Filtres par emplacement */}
+                            {currentPage !== 'ajouter' && (
+                                <div className="flex justify-center gap-3 mb-8 animate__animated animate__fadeIn">
+                                    <button 
+                                        onClick={() => setFilter('tous')}
+                                        className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'tous' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        🔍 Tous
+                                    </button>
+                                    <button 
+                                        onClick={() => setFilter('intérieur')}
+                                        className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'intérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        🏠 Intérieur
+                                    </button>
+                                    <button 
+                                        onClick={() => setFilter('extérieur')}
+                                        className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'extérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+                                    >
+                                        🌳 Extérieur
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {/* Formulaire d'ajout de tâche */}
+                            {currentPage === 'ajouter' && (
+                                <div className="bg-slate-700 p-6 rounded-lg mb-8 border border-slate-600 shadow-xl animate__animated animate__fadeIn">
+                                    <h2 className="text-2xl font-semibold mb-6 text-blue-300">✨ Ajouter une nouvelle tâche</h2>
+                                    <div className="space-y-5">
+                                        <div className="fade-in" style={{animationDelay: '0.1s'}}>
+                                            <label className="block mb-2 text-blue-200">Titre:</label>
+                                            <input
+                                                type="text"
+                                                value={newTask.title}
+                                                onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                placeholder="Nom de la tâche"
+                                            />
+                                        </div>
+                                        
+                                        <div className="fade-in" style={{animationDelay: '0.2s'}}>
+                                            <label className="block mb-2 text-blue-200">Description:</label>
+                                            <textarea
+                                                value={newTask.description}
+                                                onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                rows="3"
+                                                placeholder="Description de la tâche"
+                                            />
+                                        </div>
+                                        
+                                        <div className="fade-in" style={{animationDelay: '0.3s'}}>
+                                            <label className="block mb-2 text-blue-200">Emplacement:</label>
+                                            <select
+                                                value={newTask.location}
+                                                onChange={(e) => setNewTask({...newTask, location: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                            >
+                                                <option value="intérieur">🏠 Intérieur</option>
+                                                <option value="extérieur">🌳 Extérieur</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div className="fade-in" style={{animationDelay: '0.4s'}}>
+                                            <label className="block mb-2 text-blue-200">Temps estimé:</label>
+                                            
+                                            <TimeSelector 
+                                                value={newTask.estimatedTime} 
+                                                onChange={handleEstimatedTimeChange}
+                                            />
+                                            
+                                            {newTask.estimatedTime && (
+                                                <p className="mt-2 text-sm text-blue-300">
+                                                    Temps total estimé: {formatTime(newTask.estimatedTime)}
+                                                </p>
+                                            )}
+                                        </div>
+                                        
+                                        <button
+                                            onClick={handleAddTask}
+                                            className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in pulse-animation"
+                                            style={{animationDelay: '0.5s'}}
+                                        >
+                                            ✨ Ajouter la tâche
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Liste des tâches */}
+                            {currentPage !== 'ajouter' && (
+                                <div className="animate__animated animate__fadeIn">
+                                    <h2 className="text-2xl font-semibold mb-6 text-blue-300">
+                                        {currentPage === 'en-cours' ? '🔄 Tâches en cours' : 
+                                         currentPage === 'non-commencé' ? '📋 Tâches non commencées' : '✅ Tâches terminées'}
+                                        {filter !== 'tous' && ` - ${filter === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}`}
+                                    </h2>
+                                    
+                                    {filteredTasks.length === 0 ? (
+                                        <div className="text-center text-gray-400 py-8 bg-slate-700 rounded-lg border border-slate-600">
+                                            <p className="text-xl">Aucune tâche à afficher</p>
+                                            <p className="mt-2">Ajoutez des tâches pour les voir ici</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {filteredTasks.map((task, index) => (
+                                                <div 
+                                                    key={task.id} 
+                                                    className={`border border-slate-600 rounded-lg p-5 bg-slate-700 shadow-lg task-item ${animated[task.id] ? 'animate__animated animate__fadeInUp' : ''}`}
+                                                    style={{animationDelay: `${index * 0.1}s`}}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center">
+                                                                <h3 className="font-medium text-xl text-blue-300">{task.title}</h3>
+                                                                <span className={`ml-3 text-xs px-3 py-1 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Tâches Familiales</title>
+    <!-- Scripts React et Babel -->
     <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    
+    <!-- Animate.css pour les animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <style>
         /* Animations personnalisées */
@@ -164,767 +284,564 @@
             border-radius: 4px;
             text-align: center;
         }
+        
+        /* Thème sombre personnalisé */
+        .bg-slate-700 {
+            background-color: #334155;
+        }
+        
+        .bg-slate-800 {
+            background-color: #1e293b;
+        }
+        
+        .bg-slate-900 {
+            background-color: #0f172a;
+        }
+        
+        .border-slate-600 {
+            border-color: #475569;
+        }
+        
+        .border-slate-700 {
+            border-color: #334155;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-gray-100 min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        // Définir tous les composants à l'intérieur d'un composant App principal
+        const App = () => {
+            const { useState, useEffect, useRef } = React;
         
-        // Composant d'arrière-plan animé
-        const AnimatedBackground = () => {
-            const [circles, setCircles] = useState([]);
-            const [lines, setLines] = useState([]);
-            
-            useEffect(() => {
-                // Générer des cercles animés
-                const newCircles = [];
-                const colors = ['#3B82F6', '#10B981', '#8B5CF6', '#F97316', '#EC4899'];
+            // Composant d'arrière-plan animé
+            const AnimatedBackground = () => {
+                const [circles, setCircles] = useState([]);
+                const [lines, setLines] = useState([]);
                 
-                for (let i = 0; i < 8; i++) {
-                    const size = Math.random() * 300 + 100;
-                    newCircles.push({
-                        id: i,
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        size: `${size}px`,
-                        background: colors[Math.floor(Math.random() * colors.length)],
-                        animationDuration: `${Math.random() * 20 + 10}s`,
-                        animationDelay: `${Math.random() * 5}s`
-                    });
-                }
-                
-                setCircles(newCircles);
-                
-                // Générer des lignes animées
-                const newLines = [];
-                for (let i = 0; i < 10; i++) {
-                    newLines.push({
-                        id: i,
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        animationDuration: `${Math.random() * 15 + 5}s`,
-                        transform: `rotate(${Math.random() * 360}deg)`,
-                    });
-                }
-                
-                setLines(newLines);
-            }, []);
-            
-            return (
-                <div className="animated-bg">
-                    {circles.map(circle => (
-                        <div
-                            key={circle.id}
-                            className="circle"
-                            style={{
-                                top: circle.top,
-                                left: circle.left,
-                                width: circle.size,
-                                height: circle.size,
-                                background: circle.background,
-                                animation: `moveCircle ${circle.animationDuration} ease-in-out infinite`,
-                                animationDelay: circle.animationDelay
-                            }}
-                        />
-                    ))}
+                useEffect(() => {
+                    // Générer des cercles animés
+                    const newCircles = [];
+                    const colors = ['#3B82F6', '#10B981', '#8B5CF6', '#F97316', '#EC4899'];
                     
-                    {lines.map(line => (
-                        <div
-                            key={line.id}
-                            className="line"
-                            style={{
-                                top: line.top,
-                                left: line.left,
-                                animation: `moveLines ${line.animationDuration} linear infinite`,
-                                transform: line.transform
-                            }}
-                        />
-                    ))}
-                </div>
-            );
-        };
-        
-        // Composant Sélecteur de Temps
-        const TimeSelector = ({ value, onChange }) => {
-            // Convertir les minutes en composants de temps
-            const calculateTimeComponents = (totalMinutes) => {
-                if (!totalMinutes) return { years: 0, weeks: 0, days: 0, hours: 0, minutes: 0 };
+                    for (let i = 0; i < 8; i++) {
+                        const size = Math.random() * 300 + 100;
+                        newCircles.push({
+                            id: i,
+                            top: `${Math.random() * 100}%`,
+                            left: `${Math.random() * 100}%`,
+                            size: `${size}px`,
+                            background: colors[Math.floor(Math.random() * colors.length)],
+                            animationDuration: `${Math.random() * 20 + 10}s`,
+                            animationDelay: `${Math.random() * 5}s`
+                        });
+                    }
+                    
+                    setCircles(newCircles);
+                    
+                    // Générer des lignes animées
+                    const newLines = [];
+                    for (let i = 0; i < 10; i++) {
+                        newLines.push({
+                            id: i,
+                            top: `${Math.random() * 100}%`,
+                            left: `${Math.random() * 100}%`,
+                            animationDuration: `${Math.random() * 15 + 5}s`,
+                            transform: `rotate(${Math.random() * 360}deg)`,
+                        });
+                    }
+                    
+                    setLines(newLines);
+                }, []);
                 
-                const totalMins = parseInt(totalMinutes);
-                const years = Math.floor(totalMins / (365 * 24 * 60));
-                const weeks = Math.floor((totalMins % (365 * 24 * 60)) / (7 * 24 * 60));
-                const days = Math.floor((totalMins % (7 * 24 * 60)) / (24 * 60));
-                const hours = Math.floor((totalMins % (24 * 60)) / 60);
-                const minutes = totalMins % 60;
-                
-                return { years, weeks, days, hours, minutes };
-            };
-            
-            // État initial basé sur la valeur en minutes
-            const [timeComponents, setTimeComponents] = useState(() => calculateTimeComponents(value));
-            
-            // Mettre à jour lorsque la valeur change de l'extérieur
-            useEffect(() => {
-                setTimeComponents(calculateTimeComponents(value));
-            }, [value]);
-            
-            // Générer des nombres pour les sélecteurs (0-10)
-            const generateOptions = (max) => {
-                const options = [];
-                for (let i = 0; i <= max; i++) {
-                    options.push(
-                        <option key={i} value={i}>{i}</option>
-                    );
-                }
-                return options;
-            };
-            
-            // Calculer le total en minutes quand un composant change
-            const handleChange = (component, value) => {
-                const newComponents = { ...timeComponents, [component]: parseInt(value) };
-                setTimeComponents(newComponents);
-                
-                // Calculer le total en minutes
-                const totalMinutes = 
-                    newComponents.years * 365 * 24 * 60 +
-                    newComponents.weeks * 7 * 24 * 60 +
-                    newComponents.days * 24 * 60 +
-                    newComponents.hours * 60 +
-                    newComponents.minutes;
-                
-                onChange(totalMinutes);
-            };
-            
-            return (
-                <div className="time-selector mb-4">
-                    <div className="time-input">
-                        <label className="text-blue-200">Années</label>
-                        <select 
-                            value={timeComponents.years}
-                            onChange={(e) => handleChange('years', e.target.value)}
-                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                        >
-                            {generateOptions(10)}
-                        </select>
+                return (
+                    <div className="animated-bg">
+                        {circles.map(circle => (
+                            <div
+                                key={circle.id}
+                                className="circle"
+                                style={{
+                                    top: circle.top,
+                                    left: circle.left,
+                                    width: circle.size,
+                                    height: circle.size,
+                                    background: circle.background,
+                                    animation: `moveCircle ${circle.animationDuration} ease-in-out infinite`,
+                                    animationDelay: circle.animationDelay
+                                }}
+                            />
+                        ))}
+                        
+                        {lines.map(line => (
+                            <div
+                                key={line.id}
+                                className="line"
+                                style={{
+                                    top: line.top,
+                                    left: line.left,
+                                    animation: `moveLines ${line.animationDuration} linear infinite`,
+                                    transform: line.transform
+                                }}
+                            />
+                        ))}
                     </div>
-                    
-                    <div className="time-input">
-                        <label className="text-blue-200">Semaines</label>
-                        <select 
-                            value={timeComponents.weeks}
-                            onChange={(e) => handleChange('weeks', e.target.value)}
-                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                        >
-                            {generateOptions(10)}
-                        </select>
-                    </div>
-                    
-                    <div className="time-input">
-                        <label className="text-blue-200">Jours</label>
-                        <select 
-                            value={timeComponents.days}
-                            onChange={(e) => handleChange('days', e.target.value)}
-                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                        >
-                            {generateOptions(10)}
-                        </select>
-                    </div>
-                    
-                    <div className="time-input">
-                        <label className="text-blue-200">Heures</label>
-                        <select 
-                            value={timeComponents.hours}
-                            onChange={(e) => handleChange('hours', e.target.value)}
-                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                        >
-                            {generateOptions(10)}
-                        </select>
-                    </div>
-                    
-                    <div className="time-input">
-                        <label className="text-blue-200">Minutes</label>
-                        <select 
-                            value={timeComponents.minutes}
-                            onChange={(e) => handleChange('minutes', e.target.value)}
-                            className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                        >
-                            {generateOptions(59)}
-                        </select>
-                    </div>
-                </div>
-            );
-        };
-        
-        // Composant CAPTCHA
-        const Captcha = ({ onValidate }) => {
-            const [captchaText, setCaptchaText] = useState('');
-            const [userInput, setUserInput] = useState('');
-            const [isValid, setIsValid] = useState(null);
-            const canvasRef = useRef(null);
-            
-            // Générer un texte CAPTCHA aléatoire
-            const generateCaptcha = () => {
-                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-                let result = '';
-                for (let i = 0; i < 6; i++) {
-                    result += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return result;
+                );
             };
             
-            // Dessiner le CAPTCHA sur le canvas
-            const drawCaptcha = (text) => {
-                const canvas = canvasRef.current;
-                if (!canvas) return;
-                
-                const ctx = canvas.getContext('2d');
-                const width = canvas.width;
-                const height = canvas.height;
-                
-                // Fond
-                ctx.fillStyle = '#1E293B';
-                ctx.fillRect(0, 0, width, height);
-                
-                // Ajouter du bruit
-                for (let i = 0; i < 100; i++) {
-                    ctx.beginPath();
-                    ctx.arc(
-                        Math.random() * width,
-                        Math.random() * height,
-                        Math.random() * 2,
-                        0,
-                        Math.PI * 2
-                    );
-                    ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
-                    ctx.fill();
-                }
-                
-                // Lignes aléatoires
-                for (let i = 0; i < 4; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(Math.random() * width, Math.random() * height);
-                    ctx.lineTo(Math.random() * width, Math.random() * height);
-                    ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.3)`;
-                    ctx.lineWidth = Math.random() * 2 + 1;
-                    ctx.stroke();
-                }
-            };
-            
-            // Vérifier le CAPTCHA
-            const validateCaptcha = () => {
-                if (userInput.toUpperCase() === captchaText) {
-                    setIsValid(true);
-                    onValidate(true);
-                } else {
-                    setIsValid(false);
-                    onValidate(false);
-                    // Générer un nouveau CAPTCHA
-                    resetCaptcha();
-                }
-            };
-            
-            // Réinitialiser le CAPTCHA
-            const resetCaptcha = () => {
-                const newCaptcha = generateCaptcha();
-                setCaptchaText(newCaptcha);
-                setUserInput('');
-                setIsValid(null);
-            };
-            
-            // Initialiser le CAPTCHA
-            useEffect(() => {
-                resetCaptcha();
-            }, []);
-            
-            // Redessiner le CAPTCHA quand le texte change
-            useEffect(() => {
-                if (captchaText) {
-                    drawCaptcha(captchaText);
-                }
-            }, [captchaText]);
-            
-            return (
-                <div className="mt-6">
-                    <label className="block mb-2 text-blue-200">Vérification CAPTCHA:</label>
+            // Composant Sélecteur de Temps
+            const TimeSelector = ({ value, onChange }) => {
+                // Convertir les minutes en composants de temps
+                const calculateTimeComponents = (totalMinutes) => {
+                    if (!totalMinutes) return { years: 0, weeks: 0, days: 0, hours: 0, minutes: 0 };
                     
-                    <div className="captcha-container mb-4">
-                        <canvas ref={canvasRef} className="captcha-canvas" width="300" height="80" />
-                        <div className="captcha-overlay">
-                            <div className="captcha-text">{captchaText}</div>
+                    const totalMins = parseInt(totalMinutes);
+                    const years = Math.floor(totalMins / (365 * 24 * 60));
+                    const weeks = Math.floor((totalMins % (365 * 24 * 60)) / (7 * 24 * 60));
+                    const days = Math.floor((totalMins % (7 * 24 * 60)) / (24 * 60));
+                    const hours = Math.floor((totalMins % (24 * 60)) / 60);
+                    const minutes = totalMins % 60;
+                    
+                    return { years, weeks, days, hours, minutes };
+                };
+                
+                // État initial basé sur la valeur en minutes
+                const [timeComponents, setTimeComponents] = useState(() => calculateTimeComponents(value));
+                
+                // Mettre à jour lorsque la valeur change de l'extérieur
+                useEffect(() => {
+                    setTimeComponents(calculateTimeComponents(value));
+                }, [value]);
+                
+                // Générer des nombres pour les sélecteurs (0-10)
+                const generateOptions = (max) => {
+                    const options = [];
+                    for (let i = 0; i <= max; i++) {
+                        options.push(
+                            <option key={i} value={i}>{i}</option>
+                        );
+                    }
+                    return options;
+                };
+                
+                // Calculer le total en minutes quand un composant change
+                const handleChange = (component, value) => {
+                    const newComponents = { ...timeComponents, [component]: parseInt(value) };
+                    setTimeComponents(newComponents);
+                    
+                    // Calculer le total en minutes
+                    const totalMinutes = 
+                        newComponents.years * 365 * 24 * 60 +
+                        newComponents.weeks * 7 * 24 * 60 +
+                        newComponents.days * 24 * 60 +
+                        newComponents.hours * 60 +
+                        newComponents.minutes;
+                    
+                    onChange(totalMinutes);
+                };
+                
+                return (
+                    <div className="time-selector mb-4">
+                        <div className="time-input">
+                            <label className="text-blue-200">Années</label>
+                            <select 
+                                value={timeComponents.years}
+                                onChange={(e) => handleChange('years', e.target.value)}
+                                className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                            >
+                                {generateOptions(10)}
+                            </select>
+                        </div>
+                        
+                        <div className="time-input">
+                            <label className="text-blue-200">Semaines</label>
+                            <select 
+                                value={timeComponents.weeks}
+                                onChange={(e) => handleChange('weeks', e.target.value)}
+                                className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                            >
+                                {generateOptions(10)}
+                            </select>
+                        </div>
+                        
+                        <div className="time-input">
+                            <label className="text-blue-200">Jours</label>
+                            <select 
+                                value={timeComponents.days}
+                                onChange={(e) => handleChange('days', e.target.value)}
+                                className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                            >
+                                {generateOptions(10)}
+                            </select>
+                        </div>
+                        
+                        <div className="time-input">
+                            <label className="text-blue-200">Heures</label>
+                            <select 
+                                value={timeComponents.hours}
+                                onChange={(e) => handleChange('hours', e.target.value)}
+                                className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                            >
+                                {generateOptions(10)}
+                            </select>
+                        </div>
+                        
+                        <div className="time-input">
+                            <label className="text-blue-200">Minutes</label>
+                            <select 
+                                value={timeComponents.minutes}
+                                onChange={(e) => handleChange('minutes', e.target.value)}
+                                className="bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                            >
+                                {generateOptions(59)}
+                            </select>
                         </div>
                     </div>
-                    
-                    <div className="flex space-x-2">
-                        <input
-                            type="text"
-                            value={userInput}
-                            onChange={(e) => setUserInput(e.target.value)}
-                            placeholder="Entrez le code ci-dessus"
-                            className={`flex-1 px-4 py-3 bg-slate-800 border rounded focus:outline-none focus:ring-2 ${
-                                isValid === null ? 'border-slate-600 focus:ring-blue-500' :
-                                isValid ? 'border-green-500 focus:ring-green-500' :
-                                'border-red-500 focus:ring-red-500'
-                            } text-gray-100`}
-                        />
-                        <button
-                            onClick={validateCaptcha}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300"
-                        >
-                            Vérifier
-                        </button>
-                        <button
-                            onClick={resetCaptcha}
-                            className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition-all duration-300"
-                        >
-                            🔄
-                        </button>
-                    </div>
-                    
-                    {isValid === false && (
-                        <p className="mt-2 text-red-400">Code incorrect. Veuillez réessayer.</p>
-                    )}
-                </div>
-            );
-        };
-        
-        // Fonction pour convertir les minutes en format semaines, jours, heures, minutes
-        const formatTime = (minutes) => {
-            if (!minutes || isNaN(parseInt(minutes))) return "0 min";
-            
-            const mins = parseInt(minutes);
-            if (mins < 60) return `${mins} min`;
-            
-            const years = Math.floor(mins / (365 * 24 * 60));
-            const weeks = Math.floor((mins % (365 * 24 * 60)) / (7 * 24 * 60));
-            const days = Math.floor((mins % (7 * 24 * 60)) / (24 * 60));
-            const hours = Math.floor((mins % (24 * 60)) / 60);
-            const remainingMinutes = mins % 60;
-            
-            let result = "";
-            if (years > 0) result += `${years} année${years > 1 ? 's' : ''} `;
-            if (weeks > 0) result += `${weeks} semaine${weeks > 1 ? 's' : ''} `;
-            if (days > 0) result += `${days} jour${days > 1 ? 's' : ''} `;
-            if (hours > 0) result += `${hours} heure${hours > 1 ? 's' : ''} `;
-            if (remainingMinutes > 0) result += `${remainingMinutes} min`;
-            
-            return result.trim();
-        };
-        
-        const TaskManager = () => {
-            // État d'authentification
-            const [isAuthenticated, setIsAuthenticated] = useState(() => {
-                return localStorage.getItem('authStatus') === 'true';
-            });
-            
-            // État de connexion
-            const [loginData, setLoginData] = useState({
-                email: '',
-                password: ''
-            });
-            
-            // État d'erreur de connexion
-            const [loginError, setLoginError] = useState('');
-            
-            // État du CAPTCHA
-            const [captchaValid, setCaptchaValid] = useState(false);
-            
-            // États pour stocker les données
-            const [tasks, setTasks] = useState(() => {
-                // Récupérer les tâches du localStorage s'il y en a
-                const savedTasks = localStorage.getItem('familyTasks');
-                return savedTasks ? JSON.parse(savedTasks) : [];
-            });
-            
-            const [newTask, setNewTask] = useState({
-                title: '',
-                description: '',
-                location: 'intérieur', // 'intérieur' ou 'extérieur'
-                estimatedTime: '',
-                status: 'non-commencé', // 'non-commencé', 'en-cours', 'terminé'
-            });
-            
-            const [currentPage, setCurrentPage] = useState('ajouter');
-            const [filter, setFilter] = useState('tous');
-            const [animated, setAnimated] = useState({});
-            
-            // Animation pour les nouveaux éléments
-            useEffect(() => {
-                const newAnimated = {};
-                tasks.forEach(task => {
-                    if (!animated[task.id]) {
-                        newAnimated[task.id] = true;
-                    }
-                });
-                if (Object.keys(newAnimated).length > 0) {
-                    setAnimated({...animated, ...newAnimated});
-                }
-            }, [tasks]);
-
-            // Sauvegarder les tâches dans localStorage quand elles changent
-            useEffect(() => {
-                localStorage.setItem('familyTasks', JSON.stringify(tasks));
-            }, [tasks]);
-
-            // Gestionnaire pour ajouter une nouvelle tâche
-            const handleAddTask = () => {
-                if (!newTask.title.trim()) return;
-                
-                const newTaskId = Date.now();
-                setTasks([...tasks, { ...newTask, id: newTaskId }]);
-                setNewTask({
-                    title: '',
-                    description: '',
-                    location: 'intérieur',
-                    estimatedTime: '',
-                    status: 'non-commencé',
-                });
-                
-                // Ajouter l'animation pour la nouvelle tâche
-                setAnimated({...animated, [newTaskId]: true});
-            };
-
-            // Gestionnaire pour changer le statut d'une tâche
-            const handleStatusChange = (id, newStatus) => {
-                setTasks(tasks.map(task => 
-                    task.id === id ? { ...task, status: newStatus } : task
-                ));
-            };
-            
-            // Gestionnaire pour supprimer une tâche
-            const handleDeleteTask = (id) => {
-                if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
-                    setTasks(tasks.filter(task => task.id !== id));
-                }
-            };
-
-            // Filtrer les tâches selon la page actuelle et les filtres
-            const filteredTasks = tasks.filter(task => {
-                if (currentPage === 'en-cours' && task.status !== 'en-cours') return false;
-                if (currentPage === 'non-commencé' && task.status !== 'non-commencé') return false;
-                if (currentPage === 'terminé' && task.status !== 'terminé') return false;
-                
-                if (filter === 'intérieur' && task.location !== 'intérieur') return false;
-                if (filter === 'extérieur' && task.location !== 'extérieur') return false;
-                
-                return true;
-            });
-            
-            // Fonction de connexion
-            const handleLogin = () => {
-                if (!captchaValid) {
-                    setLoginError('Veuillez valider le CAPTCHA avant de vous connecter.');
-                    return;
-                }
-                
-                // Liste des utilisateurs autorisés
-                const allowedUsers = [
-                    { email: 'francisst5@hotmail.com', password: 'SegaSega-2025' },
-                    { email: 'stpkevpro2024@gmail.com', password: 'SegaSega-2025' }
-                ];
-                
-                // Vérifier si l'utilisateur est autorisé
-                const isAllowed = allowedUsers.some(
-                    user => user.email === loginData.email && user.password === loginData.password
                 );
+            };
+            
+            // Composant CAPTCHA
+            const Captcha = ({ onValidate }) => {
+                const [captchaText, setCaptchaText] = useState('');
+                const [userInput, setUserInput] = useState('');
+                const [isValid, setIsValid] = useState(null);
+                const canvasRef = useRef(null);
                 
-                if (isAllowed) {
-                    setIsAuthenticated(true);
-                    localStorage.setItem('authStatus', 'true');
-                    setLoginError('');
-                } else {
-                    setLoginError('Email ou mot de passe incorrect');
-                }
-            };
-            
-            // Fonction de déconnexion
-            const handleLogout = () => {
-                setIsAuthenticated(false);
-                localStorage.removeItem('authStatus');
-            };
-            
-            // Mise à jour du temps estimé
-            const handleEstimatedTimeChange = (time) => {
-                setNewTask({...newTask, estimatedTime: time});
-            };
-            
-            // Couleurs pour les priorités
-            const getStatusColor = (status) => {
-                switch (status) {
-                    case 'non-commencé': return 'bg-yellow-600 text-yellow-100';
-                    case 'en-cours': return 'bg-blue-600 text-blue-100';
-                    case 'terminé': return 'bg-green-600 text-green-100';
-                    default: return 'bg-gray-600 text-gray-100';
-                }
-            };
-
-            return (
-                <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-4 relative">
-                    <AnimatedBackground />
+                // Générer un texte CAPTCHA aléatoire
+                const generateCaptcha = () => {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let result = '';
+                    for (let i = 0; i < 6; i++) {
+                        result += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    return result;
+                };
+                
+                // Dessiner le CAPTCHA sur le canvas
+                const drawCaptcha = (text) => {
+                    const canvas = canvasRef.current;
+                    if (!canvas) return;
                     
-                    <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-700 relative z-10">
-                        <h1 className="text-3xl font-bold text-center mb-6 text-blue-400 animate__animated animate__fadeIn">
-                            Gestion des Tâches Familiales
-                        </h1>
+                    const ctx = canvas.getContext('2d');
+                    const width = canvas.width;
+                    const height = canvas.height;
+                    
+                    // Fond
+                    ctx.fillStyle = '#1E293B';
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    // Ajouter du bruit
+                    for (let i = 0; i < 100; i++) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            Math.random() * width,
+                            Math.random() * height,
+                            Math.random() * 2,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+                        ctx.fill();
+                    }
+                    
+                    // Lignes aléatoires
+                    for (let i = 0; i < 4; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(Math.random() * width, Math.random() * height);
+                        ctx.lineTo(Math.random() * width, Math.random() * height);
+                        ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.3)`;
+                        ctx.lineWidth = Math.random() * 2 + 1;
+                        ctx.stroke();
+                    }
+                };
+                
+                // Vérifier le CAPTCHA
+                const validateCaptcha = () => {
+                    if (userInput.toUpperCase() === captchaText) {
+                        setIsValid(true);
+                        onValidate(true);
+                    } else {
+                        setIsValid(false);
+                        onValidate(false);
+                        // Générer un nouveau CAPTCHA
+                        resetCaptcha();
+                    }
+                };
+                
+                // Réinitialiser le CAPTCHA
+                const resetCaptcha = () => {
+                    const newCaptcha = generateCaptcha();
+                    setCaptchaText(newCaptcha);
+                    setUserInput('');
+                    setIsValid(null);
+                };
+                
+                // Initialiser le CAPTCHA
+                useEffect(() => {
+                    resetCaptcha();
+                }, []);
+                
+                // Redessiner le CAPTCHA quand le texte change
+                useEffect(() => {
+                    if (captchaText) {
+                        drawCaptcha(captchaText);
+                    }
+                }, [captchaText]);
+                
+                return (
+                    <div className="mt-6">
+                        <label className="block mb-2 text-blue-200">Vérification CAPTCHA:</label>
                         
-                        {!isAuthenticated ? (
-                            <div className="max-w-md mx-auto bg-slate-700 p-8 rounded-lg shadow-xl border border-slate-600 login-appear">
-                                <h2 className="text-2xl font-semibold mb-6 text-center text-blue-300">Connexion</h2>
-                                
-                                <div className="space-y-6">
-                                    <div className="fade-in" style={{animationDelay: '0.1s'}}>
-                                        <label className="block mb-2 text-blue-200">Email:</label>
-                                        <input
-                                            type="email"
-                                            value={loginData.email}
-                                            onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                            placeholder="Votre email"
-                                        />
-                                    </div>
-                                    
-                                    <div className="fade-in" style={{animationDelay: '0.2s'}}>
-                                        <label className="block mb-2 text-blue-200">Mot de passe:</label>
-                                        <input
-                                            type="password"
-                                            value={loginData.password}
-                                            onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                            placeholder="Votre mot de passe"
-                                        />
-                                    </div>
-                                    
-                                    <div className="fade-in" style={{animationDelay: '0.3s'}}>
-                                        <Captcha onValidate={setCaptchaValid} />
-                                    </div>
-                                    
-                                    {loginError && (
-                                        <div className="bg-red-900 text-red-100 p-3 rounded text-center border border-red-700 animate__animated animate__headShake">
-                                            {loginError}
-                                        </div>
-                                    )}
-                                
-                                {/* Liste des tâches */}
-                                {currentPage !== 'ajouter' && (
-                                    <div className="animate__animated animate__fadeIn">
-                                        <h2 className="text-2xl font-semibold mb-6 text-blue-300">
-                                            {currentPage === 'en-cours' ? '🔄 Tâches en cours' : 
-                                             currentPage === 'non-commencé' ? '📋 Tâches non commencées' : '✅ Tâches terminées'}
-                                            {filter !== 'tous' && ` - ${filter === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}`}
-                                        </h2>
-                                        
-                                        {filteredTasks.length === 0 ? (
-                                            <div className="text-center text-gray-400 py-8 bg-slate-700 rounded-lg border border-slate-600">
-                                                <p className="text-xl">Aucune tâche à afficher</p>
-                                                <p className="mt-2">Ajoutez des tâches pour les voir ici</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {filteredTasks.map((task, index) => (
-                                                    <div 
-                                                        key={task.id} 
-                                                        className={`border border-slate-600 rounded-lg p-5 bg-slate-700 shadow-lg task-item ${animated[task.id] ? 'animate__animated animate__fadeInUp' : ''}`}
-                                                        style={{animationDelay: `${index * 0.1}s`}}
-                                                    >
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center">
-                                                                    <h3 className="font-medium text-xl text-blue-300">{task.title}</h3>
-                                                                    <span className={`ml-3 text-xs px-3 py-1 rounded-full ${getStatusColor(task.status)}`}>
-                                                                        {task.status === 'non-commencé' ? 'Non commencé' : 
-                                                                         task.status === 'en-cours' ? 'En cours' : 'Terminé'}
-                                                                    </span>
-                                                                </div>
-                                                                
-                                                                <p className="text-gray-300 mt-2">{task.description}</p>
-                                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                                    <span className={`text-xs px-3 py-1 rounded-full ${task.location === 'intérieur' ? 'bg-blue-900 text-blue-200' : 'bg-green-900 text-green-200'}`}>
-                                                                        {task.location === 'intérieur' ? '🏠 Intérieur' : '🌳 Extérieur'}
-                                                                    </span>
-                                                                    {task.estimatedTime && (
-                                                                        <span className="text-xs px-3 py-1 rounded-full bg-purple-900 text-purple-200">
-                                                                            ⏱️ {formatTime(task.estimatedTime)}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="ml-4 flex flex-col space-y-2">
-                                                                <select
-                                                                    value={task.status}
-                                                                    onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                                                                    className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                                >
-                                                                    <option value="non-commencé">⏸️ Non commencé</option>
-                                                                    <option value="en-cours">▶️ En cours</option>
-                                                                    <option value="terminé">✅ Terminé</option>
-                                                                </select>
-                                                                <button
-                                                                    onClick={() => handleDeleteTask(task.id)}
-                                                                    className="px-3 py-2 bg-red-600 text-red-100 rounded hover:bg-red-700 text-sm transition-all duration-300"
-                                                                >
-                                                                    🗑️ Supprimer
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {/* Footer */}
-                                <div className="mt-10 text-center text-gray-500 text-sm animate__animated animate__fadeIn">
-                                    <p>Gestion des Tâches Familiales &copy; 2025</p>
-                                </div>
+                        <div className="captcha-container mb-4">
+                            <canvas ref={canvasRef} className="captcha-canvas" width="300" height="80" />
+                            <div className="captcha-overlay">
+                                <div className="captcha-text">{captchaText}</div>
                             </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                            <input
+                                type="text"
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                placeholder="Entrez le code ci-dessus"
+                                className={`flex-1 px-4 py-3 bg-slate-800 border rounded focus:outline-none focus:ring-2 ${
+                                    isValid === null ? 'border-slate-600 focus:ring-blue-500' :
+                                    isValid ? 'border-green-500 focus:ring-green-500' :
+                                    'border-red-500 focus:ring-red-500'
+                                } text-gray-100`}
+                            />
+                            <button
+                                onClick={validateCaptcha}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300"
+                            >
+                                Vérifier
+                            </button>
+                            <button
+                                onClick={resetCaptcha}
+                                className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition-all duration-300"
+                            >
+                                🔄
+                            </button>
+                        </div>
+                        
+                        {isValid === false && (
+                            <p className="mt-2 text-red-400">Code incorrect. Veuillez réessayer.</p>
                         )}
                     </div>
-                </div>
-            );
-        };
+                );
+            };
+            
+            // Fonction pour convertir les minutes en format semaines, jours, heures, minutes
+            const formatTime = (minutes) => {
+                if (!minutes || isNaN(parseInt(minutes))) return "0 min";
+                
+                const mins = parseInt(minutes);
+                if (mins < 60) return `${mins} min`;
+                
+                const years = Math.floor(mins / (365 * 24 * 60));
+                const weeks = Math.floor((mins % (365 * 24 * 60)) / (7 * 24 * 60));
+                const days = Math.floor((mins % (7 * 24 * 60)) / (24 * 60));
+                const hours = Math.floor((mins % (24 * 60)) / 60);
+                const remainingMinutes = mins % 60;
+                
+                let result = "";
+                if (years > 0) result += `${years} année${years > 1 ? 's' : ''} `;
+                if (weeks > 0) result += `${weeks} semaine${weeks > 1 ? 's' : ''} `;
+                if (days > 0) result += `${days} jour${days > 1 ? 's' : ''} `;
+                if (hours > 0) result += `${hours} heure${hours > 1 ? 's' : ''} `;
+                if (remainingMinutes > 0) result += `${remainingMinutes} min`;
+                
+                return result.trim();
+            };
+            
+            // Composant principal TaskManager
+            const TaskManager = () => {
+                // État d'authentification
+                const [isAuthenticated, setIsAuthenticated] = useState(() => {
+                    return localStorage.getItem('authStatus') === 'true';
+                });
+                
+                // État de connexion
+                const [loginData, setLoginData] = useState({
+                    email: '',
+                    password: ''
+                });
+                
+                // État d'erreur de connexion
+                const [loginError, setLoginError] = useState('');
+                
+                // État du CAPTCHA
+                const [captchaValid, setCaptchaValid] = useState(false);
+                
+                // États pour stocker les données
+                const [tasks, setTasks] = useState(() => {
+                    // Récupérer les tâches du localStorage s'il y en a
+                    const savedTasks = localStorage.getItem('familyTasks');
+                    return savedTasks ? JSON.parse(savedTasks) : [];
+                });
+                
+                const [newTask, setNewTask] = useState({
+                    title: '',
+                    description: '',
+                    location: 'intérieur', // 'intérieur' ou 'extérieur'
+                    estimatedTime: '',
+                    status: 'non-commencé', // 'non-commencé', 'en-cours', 'terminé'
+                });
+                
+                const [currentPage, setCurrentPage] = useState('ajouter');
+                const [filter, setFilter] = useState('tous');
+                const [animated, setAnimated] = useState({});
+                
+                // Animation pour les nouveaux éléments
+                useEffect(() => {
+                    const newAnimated = {};
+                    tasks.forEach(task => {
+                        if (!animated[task.id]) {
+                            newAnimated[task.id] = true;
+                        }
+                    });
+                    if (Object.keys(newAnimated).length > 0) {
+                        setAnimated({...animated, ...newAnimated});
+                    }
+                }, [tasks]);
 
-        ReactDOM.render(<TaskManager />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+                // Sauvegarder les tâches dans localStorage quand elles changent
+                useEffect(() => {
+                    localStorage.setItem('familyTasks', JSON.stringify(tasks));
+                }, [tasks]);
+
+                // Gestionnaire pour ajouter une nouvelle tâche
+                const handleAddTask = () => {
+                    if (!newTask.title.trim()) return;
+                    
+                    const newTaskId = Date.now();
+                    setTasks([...tasks, { ...newTask, id: newTaskId }]);
+                    setNewTask({
+                        title: '',
+                        description: '',
+                        location: 'intérieur',
+                        estimatedTime: '',
+                        status: 'non-commencé',
+                    });
+                    
+                    // Ajouter l'animation pour la nouvelle tâche
+                    setAnimated({...animated, [newTaskId]: true});
+                };
+
+                // Gestionnaire pour changer le statut d'une tâche
+                const handleStatusChange = (id, newStatus) => {
+                    setTasks(tasks.map(task => 
+                        task.id === id ? { ...task, status: newStatus } : task
+                    ));
+                };
+                
+                // Gestionnaire pour supprimer une tâche
+                const handleDeleteTask = (id) => {
+                    if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
+                        setTasks(tasks.filter(task => task.id !== id));
+                    }
+                };
+
+                // Filtrer les tâches selon la page actuelle et les filtres
+                const filteredTasks = tasks.filter(task => {
+                    if (currentPage === 'en-cours' && task.status !== 'en-cours') return false;
+                    if (currentPage === 'non-commencé' && task.status !== 'non-commencé') return false;
+                    if (currentPage === 'terminé' && task.status !== 'terminé') return false;
+                    
+                    if (filter === 'intérieur' && task.location !== 'intérieur') return false;
+                    if (filter === 'extérieur' && task.location !== 'extérieur') return false;
+                    
+                    return true;
+                });
+                
+                // Fonction de connexion
+                const handleLogin = () => {
+                    if (!captchaValid) {
+                        setLoginError('Veuillez valider le CAPTCHA avant de vous connecter.');
+                        return;
+                    }
+                    
+                    // Liste des utilisateurs autorisés
+                    const allowedUsers = [
+                        { email: 'francisst5@hotmail.com', password: 'SegaSega-2025' },
+                        { email: 'stpkevpro2024@gmail.com', password: 'SegaSega-2025' }
+                    ];
+                    
+                    // Vérifier si l'utilisateur est autorisé
+                    const isAllowed = allowedUsers.some(
+                        user => user.email === loginData.email && user.password === loginData.password
+                    );
+                    
+                    if (isAllowed) {
+                        setIsAuthenticated(true);
+                        localStorage.setItem('authStatus', 'true');
+                        setLoginError('');
+                    } else {
+                        setLoginError('Email ou mot de passe incorrect');
+                    }
+                };
+                
+                // Fonction de déconnexion
+                const handleLogout = () => {
+                    setIsAuthenticated(false);
+                    localStorage.removeItem('authStatus');
+                };
+                
+                // Mise à jour du temps estimé
+                const handleEstimatedTimeChange = (time) => {
+                    setNewTask({...newTask, estimatedTime: time});
+                };
+                
+                // Couleurs pour les priorités
+                const getStatusColor = (status) => {
+                    switch (status) {
+                        case 'non-commencé': return 'bg-yellow-600 text-yellow-100';
+                        case 'en-cours': return 'bg-blue-600 text-blue-100';
+                        case 'terminé': return 'bg-green-600 text-green-100';
+                        default: return 'bg-gray-600 text-gray-100';
+                    }
+                };
+
+                if (!isAuthenticated) {
+                    return (
+                        <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-4 relative">
+                            <AnimatedBackground />
+                            
+                            <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-700 relative z-10">
+                                <h1 className="text-3xl font-bold text-center mb-6 text-blue-400 animate__animated animate__fadeIn">
+                                    Gestion des Tâches Familiales
+                                </h1>
+                                
+                                <div className="max-w-md mx-auto bg-slate-700 p-8 rounded-lg shadow-xl border border-slate-600 login-appear">
+                                    <h2 className="text-2xl font-semibold mb-6 text-center text-blue-300">Connexion</h2>
                                     
-                                    <button
-                                        onClick={handleLogin}
-                                        className={`w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in ${captchaValid ? 'bg-blue-600 text-white hover:bg-blue-700 pulse-animation' : 'bg-gray-600 text-gray-300 cursor-not-allowed'}`}
-                                        style={{animationDelay: '0.4s'}}
-                                        disabled={!captchaValid}
-                                    >
-                                        Se connecter
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                {/* Bouton de déconnexion */}
-                                <div className="flex justify-end mb-4 animate__animated animate__fadeInRight">
-                                    <button
-                                        onClick={handleLogout}
-                                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all duration-300 shadow"
-                                    >
-                                        Déconnexion
-                                    </button>
-                                </div>
-                                
-                                {/* Navigation */}
-                                <div className="flex flex-wrap justify-center gap-3 mb-8 animate__animated animate__fadeInUp">
-                                    <button 
-                                        onClick={() => setCurrentPage('ajouter')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        ✏️ Ajouter une tâche
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('en-cours')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        🔄 Tâches en cours
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('non-commencé')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'non-commencé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        📋 Tâches non commencées
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage('terminé')}
-                                        className={`px-5 py-3 rounded-md shadow transition-all duration-300 ${currentPage === 'terminé' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                    >
-                                        ✅ Tâches terminées
-                                    </button>
-                                </div>
-                                
-                                {/* Filtres par emplacement */}
-                                {currentPage !== 'ajouter' && (
-                                    <div className="flex justify-center gap-3 mb-8 animate__animated animate__fadeIn">
-                                        <button 
-                                            onClick={() => setFilter('tous')}
-                                            className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'tous' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                        >
-                                            🔍 Tous
-                                        </button>
-                                        <button 
-                                            onClick={() => setFilter('intérieur')}
-                                            className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'intérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                        >
-                                            🏠 Intérieur
-                                        </button>
-                                        <button 
-                                            onClick={() => setFilter('extérieur')}
-                                            className={`px-4 py-2 rounded-md transition-all duration-300 ${filter === 'extérieur' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
-                                        >
-                                            🌳 Extérieur
-                                        </button>
-                                    </div>
-                                )}
-                                
-                                {/* Formulaire d'ajout de tâche */}
-                                {currentPage === 'ajouter' && (
-                                    <div className="bg-slate-700 p-6 rounded-lg mb-8 border border-slate-600 shadow-xl animate__animated animate__fadeIn">
-                                        <h2 className="text-2xl font-semibold mb-6 text-blue-300">✨ Ajouter une nouvelle tâche</h2>
-                                        <div className="space-y-5">
-                                            <div className="fade-in" style={{animationDelay: '0.1s'}}>
-                                                <label className="block mb-2 text-blue-200">Titre:</label>
-                                                <input
-                                                    type="text"
-                                                    value={newTask.title}
-                                                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                    placeholder="Nom de la tâche"
-                                                />
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.2s'}}>
-                                                <label className="block mb-2 text-blue-200">Description:</label>
-                                                <textarea
-                                                    value={newTask.description}
-                                                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                    rows="3"
-                                                    placeholder="Description de la tâche"
-                                                />
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.3s'}}>
-                                                <label className="block mb-2 text-blue-200">Emplacement:</label>
-                                                <select
-                                                    value={newTask.location}
-                                                    onChange={(e) => setNewTask({...newTask, location: e.target.value})}
-                                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                >
-                                                    <option value="intérieur">🏠 Intérieur</option>
-                                                    <option value="extérieur">🌳 Extérieur</option>
-                                                </select>
-                                            </div>
-                                            
-                                            <div className="fade-in" style={{animationDelay: '0.4s'}}>
-                                                <label className="block mb-2 text-blue-200">Temps estimé:</label>
-                                                
-                                                <TimeSelector 
-                                                    value={newTask.estimatedTime} 
-                                                    onChange={handleEstimatedTimeChange}
-                                                />
-                                                
-                                                {newTask.estimatedTime && (
-                                                    <p className="mt-2 text-sm text-blue-300">
-                                                        Temps total estimé: {formatTime(newTask.estimatedTime)}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            
-                                            <button
-                                                onClick={handleAddTask}
-                                                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in pulse-animation"
-                                                style={{animationDelay: '0.5s'}}
-                                            >
-                                                ✨ Ajouter la tâche
-                                            </button>
+                                    <div className="space-y-6">
+                                        <div className="fade-in" style={{animationDelay: '0.1s'}}>
+                                            <label className="block mb-2 text-blue-200">Email:</label>
+                                            <input
+                                                type="email"
+                                                value={loginData.email}
+                                                onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                placeholder="Votre email"
+                                            />
                                         </div>
-                                    </div>
-                                )}
+                                        
+                                        <div className="fade-in" style={{animationDelay: '0.2s'}}>
+                                            <label className="block mb-2 text-blue-200">Mot de passe:</label>
+                                            <input
+                                                type="password"
+                                                value={loginData.password}
+                                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                placeholder="Votre mot de passe"
+                                            />
+                                        </div>
+                                        
+                                        <div className="fade-in" style={{animationDelay: '0.3s'}}>
+                                            <Captcha onValidate={setCaptchaValid} />
+                                        </div>
+                                        
+                                        {loginError && (
+                                            <div className="bg-red-900 text-red-100 p-3 rounded text-center border border-red-700 animate__animated animate__headShake">
