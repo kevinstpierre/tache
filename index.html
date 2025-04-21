@@ -1,4 +1,6 @@
+Je vais intégrer un planificateur hebdomadaire dans votre code existant. Voici le code complet avec les ajouts nécessaires :
 
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -208,6 +210,50 @@
                 margin-left: 250px;
             }
         }
+
+        /* Styles pour le calendrier hebdomadaire */
+        .week-day {
+            border: 1px solid #3B4252;
+            border-radius: 8px;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .week-day:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+        
+        .weekly-task {
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .weekly-task:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .weekly-task.completed {
+            opacity: 0.6;
+        }
+        
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 3px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .color-dot:hover {
+            transform: scale(1.3);
+        }
+        
+        .color-dot.selected {
+            box-shadow: 0 0 0 2px white;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-gray-100 min-h-screen">
@@ -223,7 +269,7 @@
         
         // API pour sauvegarder et charger les données
         const API = {
-            async saveTasks(tasks) {
+            async saveTasks(data) {
                 try {
                     const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                         method: 'PUT',
@@ -231,7 +277,7 @@
                             'Content-Type': 'application/json',
                             'X-Master-Key': API_KEY,
                         },
-                        body: JSON.stringify({ tasks })
+                        body: JSON.stringify(data)
                     });
                     
                     if (!response.ok) {
@@ -246,7 +292,7 @@
                 }
             },
             
-            async loadTasks() {
+            async loadData() {
                 try {
                     const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                         headers: {
@@ -255,15 +301,18 @@
                     });
                     
                     if (!response.ok) {
-                        console.error('Erreur lors du chargement des tâches:', await response.text());
-                        return [];
+                        console.error('Erreur lors du chargement des données:', await response.text());
+                        return { tasks: [], weeklyTasks: {} };
                     }
                     
                     const data = await response.json();
-                    return data.record.tasks || [];
+                    return { 
+                        tasks: data.record.tasks || [],
+                        weeklyTasks: data.record.weeklyTasks || {}
+                    };
                 } catch (error) {
-                    console.error('Erreur lors du chargement des tâches:', error);
-                    return [];
+                    console.error('Erreur lors du chargement des données:', error);
+                    return { tasks: [], weeklyTasks: {} };
                 }
             }
         };
@@ -380,6 +429,16 @@
                             
                             <button
                                 onClick={() => {
+                                    setCurrentPage('planning');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'planning' ? 'bg-indigo-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                            >
+                                <span className="mr-3">📅</span> Planning Hebdo
+                            </button>
+                            
+                            <button
+                                onClick={() => {
                                     setCurrentPage('non-commencé');
                                     setIsOpen(false);
                                 }}
@@ -419,7 +478,7 @@
                             </button>
                         </div>
                         
-                        {currentPage !== 'ajouter' && (
+                        {currentPage !== 'ajouter' && currentPage !== 'planning' && (
                             <div className="space-y-3 pt-4 border-t border-slate-700">
                                 <h3 className="text-lg font-semibold text-blue-300">Filtrer par:</h3>
                                 
@@ -468,6 +527,253 @@
                                 <span className="mr-3">🚪</span> Déconnexion
                             </button>
                         </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Composant WeeklyPlanner
+        const WeeklyPlanner = ({ weeklyTasks, saveWeeklyTasks, selectedDate }) => {
+            const [newTask, setNewTask] = useState({
+                title: '',
+                day: 0, // 0 = lundi, 1 = mardi, etc.
+                color: 'blue'
+            });
+            
+            const weekDays = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+            
+            // Génère les dates de la semaine à partir de la date sélectionnée
+            const getWeekDates = (date) => {
+                const day = date.getDay(); // 0 = dimanche, 1 = lundi, etc.
+                const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Ajustement pour commencer le lundi
+                
+                // Créer un tableau de dates pour la semaine
+                return Array(7).fill().map((_, i) => {
+                    const d = new Date(date);
+                    d.setDate(diff + i);
+                    return d;
+                });
+            };
+            
+            const weekDates = getWeekDates(selectedDate);
+            
+            // Formatage de la date en chaîne de caractères (YYYY-MM-DD)
+            const formatDate = (date) => {
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            };
+            
+            // Obtient les tâches pour un jour donné
+            const getTasksForDay = (dayIndex) => {
+                const date = formatDate(weekDates[dayIndex]);
+                return weeklyTasks[date] || [];
+            };
+            
+            // Gestion de l'ajout d'une nouvelle tâche
+            const handleAddTask = () => {
+                if (!newTask.title.trim()) return;
+                
+                const date = formatDate(weekDates[newTask.day]);
+                const updatedWeeklyTasks = { ...weeklyTasks };
+                
+                if (!updatedWeeklyTasks[date]) {
+                    updatedWeeklyTasks[date] = [];
+                }
+                
+                updatedWeeklyTasks[date].push({
+                    id: Date.now(),
+                    title: newTask.title,
+                    color: newTask.color,
+                    completed: false
+                });
+                
+                saveWeeklyTasks(updatedWeeklyTasks);
+                setNewTask({ title: '', day: newTask.day, color: 'blue' });
+            };
+            
+            // Gestion du changement d'état d'une tâche (terminée/non terminée)
+            const toggleTaskCompletion = (date, taskId) => {
+                const updatedWeeklyTasks = { ...weeklyTasks };
+                const taskIndex = updatedWeeklyTasks[date].findIndex(t => t.id === taskId);
+                
+                if (taskIndex !== -1) {
+                    updatedWeeklyTasks[date][taskIndex].completed = !updatedWeeklyTasks[date][taskIndex].completed;
+                    saveWeeklyTasks(updatedWeeklyTasks);
+                }
+            };
+            
+            // Gestion du changement de couleur d'une tâche
+            const changeTaskColor = (date, taskId, newColor) => {
+                const updatedWeeklyTasks = { ...weeklyTasks };
+                const taskIndex = updatedWeeklyTasks[date].findIndex(t => t.id === taskId);
+                
+                if (taskIndex !== -1) {
+                    updatedWeeklyTasks[date][taskIndex].color = newColor;
+                    saveWeeklyTasks(updatedWeeklyTasks);
+                }
+            };
+            
+            // Gestion de la suppression d'une tâche
+            const deleteTask = (date, taskId) => {
+                const updatedWeeklyTasks = { ...weeklyTasks };
+                updatedWeeklyTasks[date] = updatedWeeklyTasks[date].filter(t => t.id !== taskId);
+                
+                if (updatedWeeklyTasks[date].length === 0) {
+                    delete updatedWeeklyTasks[date];
+                }
+                
+                saveWeeklyTasks(updatedWeeklyTasks);
+            };
+            
+            const availableColors = [
+                { name: 'blue', bg: 'bg-blue-500', text: 'text-white' },
+                { name: 'green', bg: 'bg-green-500', text: 'text-white' },
+                { name: 'yellow', bg: 'bg-yellow-500', text: 'text-black' },
+                { name: 'red', bg: 'bg-red-500', text: 'text-white' },
+                { name: 'purple', bg: 'bg-purple-500', text: 'text-white' }
+            ];
+            
+            const getColorClass = (colorName) => {
+                const color = availableColors.find(c => c.name === colorName) || availableColors[0];
+                return `${color.bg} ${color.text}`;
+            };
+
+            // Obtenez le mois et l'année de la semaine affichée
+            const monthYear = weekDates[0].toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            
+            return (
+                <div className="space-y-6">
+                    {/* Formulaire d'ajout de tâche */}
+                    <div className="bg-slate-700 p-4 rounded-lg shadow-lg">
+                        <h3 className="font-bold text-blue-300 mb-3 text-lg">Ajouter une tâche</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-gray-300 mb-1">Titre</label>
+                                <input 
+                                    type="text" 
+                                    value={newTask.title}
+                                    onChange={e => setNewTask({...newTask, title: e.target.value})}
+                                    className="w-full p-2 bg-slate-800 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Entrez le titre de la tâche"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-gray-300 mb-1">Jour</label>
+                                <select
+                                    value={newTask.day}
+                                    onChange={e => setNewTask({...newTask, day: parseInt(e.target.value)})}
+                                    className="w-full p-2 bg-slate-800 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {weekDays.map((day, index) => (
+                                        <option key={index} value={index}>
+                                            {day} ({weekDates[index].toLocaleDateString()})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-gray-300 mb-1">Couleur</label>
+                                <select
+                                    value={newTask.color}
+                                    onChange={e => setNewTask({...newTask, color: e.target.value})}
+                                    className="w-full p-2 bg-slate-800 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {availableColors.map(color => (
+                                        <option key={color.name} value={color.name}>
+                                            {color.name.charAt(0).toUpperCase() + color.name.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button
+                            onClick={handleAddTask}
+                            disabled={!newTask.title.trim()}
+                            className="mt-4 w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Ajouter au planning
+                        </button>
+                    </div>
+                    
+                    {/* Calendrier hebdomadaire */}
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 overflow-hidden">
+                        {weekDays.map((day, index) => {
+                            const date = formatDate(weekDates[index]);
+                            const dayTasks = getTasksForDay(index);
+                            
+                            return (
+                                <div key={index} className="bg-slate-700 p-3 rounded-lg week-day min-h-[200px] flex flex-col">
+                                    <div className="text-center mb-2 pb-2 border-b border-slate-600">
+                                        <div className="font-semibold text-blue-300">{day}</div>
+                                        <div className="text-xs text-gray-400">{weekDates[index].toLocaleDateString()}</div>
+                                    </div>
+                                    
+                                    <div className="flex-grow overflow-y-auto space-y-2">
+                                        Voici la suite du code pour compléter le composant WeeklyPlanner et le reste de l'application :
+
+```javascript
+                                        {dayTasks.length === 0 ? (
+                                            <div className="text-center text-gray-500 text-sm py-2">
+                                                Aucune tâche
+                                            </div>
+                                        ) : (
+                                            dayTasks.map(task => (
+                                                <div 
+                                                    key={task.id} 
+                                                    className={`p-2 rounded-md weekly-task ${getColorClass(task.color)} ${task.completed ? 'line-through opacity-60' : ''}`}
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div 
+                                                            className="flex-grow cursor-pointer truncate"
+                                                            onClick={() => toggleTaskCompletion(date, task.id)}
+                                                            title={task.title}
+                                                        >
+                                                            {task.title}
+                                                        </div>
+                                                        
+                                                        <div className="flex">
+                                                            {/* Menu de couleurs */}
+                                                            <div className="dropdown relative mr-1">
+                                                                <button 
+                                                                    className="text-xs hover:opacity-80 focus:outline-none"
+                                                                    title="Changer de couleur"
+                                                                >
+                                                                    🎨
+                                                                </button>
+                                                                <div className="dropdown-content absolute right-0 mt-1 bg-slate-800 rounded-md p-1 hidden group-hover:block">
+                                                                    <div className="flex space-x-1">
+                                                                        {availableColors.map(color => (
+                                                                            <div
+                                                                                key={color.name}
+                                                                                className={`color-dot ${color.bg} ${task.color === color.name ? 'selected' : ''}`}
+                                                                                onClick={() => changeTaskColor(date, task.id, color.name)}
+                                                                                title={color.name}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {/* Bouton supprimer */}
+                                                            <button
+                                                                className="text-xs hover:opacity-80 focus:outline-none"
+                                                                onClick={() => deleteTask(date, task.id)}
+                                                                title="Supprimer"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -627,6 +933,8 @@
             
             // États pour stocker les données
             const [tasks, setTasks] = useState([]);
+            const [weeklyTasks, setWeeklyTasks] = useState({});
+            const [selectedDate, setSelectedDate] = useState(new Date());
             const [loading, setLoading] = useState(true);
             const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'success', 'error'
             
@@ -642,23 +950,24 @@
             const [filter, setFilter] = useState('tous');
             const [animated, setAnimated] = useState({});
             
-            // Charger les tâches depuis l'API au démarrage
+            // Charger les données depuis l'API au démarrage
             useEffect(() => {
                 if (isAuthenticated) {
-                    loadTasks();
+                    loadData();
                 }
             }, [isAuthenticated]);
             
-            // Fonction pour charger les tâches depuis l'API
-            const loadTasks = async () => {
+            // Fonction pour charger les données depuis l'API
+            const loadData = async () => {
                 setLoading(true);
                 
                 try {
-                    const loadedTasks = await API.loadTasks();
-                    setTasks(loadedTasks);
+                    const data = await API.loadData();
+                    setTasks(data.tasks);
+                    setWeeklyTasks(data.weeklyTasks);
                     setSyncStatus('success');
                 } catch (error) {
-                    console.error('Erreur lors du chargement des tâches:', error);
+                    console.error('Erreur lors du chargement des données:', error);
                     setSyncStatus('error');
                 }
                 
@@ -670,7 +979,7 @@
                 if (!isAuthenticated) return;
                 
                 const intervalId = setInterval(() => {
-                    loadTasks();
+                    loadData();
                 }, 60000);
                 
                 return () => clearInterval(intervalId);
@@ -689,19 +998,46 @@
                 }
             }, [tasks]);
 
-            // Sauvegarder les tâches vers l'API lorsqu'elles changent
+            // Sauvegarder les tâches vers l'API
             const saveTasks = async (updatedTasks) => {
                 setSyncStatus('syncing');
                 
                 try {
-                    const success = await API.saveTasks(updatedTasks);
+                    const success = await API.saveTasks({
+                        tasks: updatedTasks,
+                        weeklyTasks: weeklyTasks
+                    });
+                    
                     if (success) {
+                        setTasks(updatedTasks);
                         setSyncStatus('success');
                     } else {
                         setSyncStatus('error');
                     }
                 } catch (error) {
                     console.error('Erreur lors de la sauvegarde des tâches:', error);
+                    setSyncStatus('error');
+                }
+            };
+            
+            // Sauvegarder les tâches hebdomadaires vers l'API
+            const saveWeeklyTasks = async (updatedWeeklyTasks) => {
+                setSyncStatus('syncing');
+                
+                try {
+                    const success = await API.saveTasks({
+                        tasks: tasks,
+                        weeklyTasks: updatedWeeklyTasks
+                    });
+                    
+                    if (success) {
+                        setWeeklyTasks(updatedWeeklyTasks);
+                        setSyncStatus('success');
+                    } else {
+                        setSyncStatus('error');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la sauvegarde des tâches hebdomadaires:', error);
                     setSyncStatus('error');
                 }
             };
@@ -713,7 +1049,6 @@
                 const newTaskId = Date.now();
                 const updatedTasks = [...tasks, { ...newTask, id: newTaskId }];
                 
-                setTasks(updatedTasks);
                 setNewTask({
                     title: '',
                     description: '',
@@ -735,8 +1070,6 @@
                     task.id === id ? { ...task, status: newStatus } : task
                 );
                 
-                setTasks(updatedTasks);
-                
                 // Sauvegarder vers l'API
                 await saveTasks(updatedTasks);
             };
@@ -745,7 +1078,6 @@
             const handleDeleteTask = async (id) => {
                 if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
                     const updatedTasks = tasks.filter(task => task.id !== id);
-                    setTasks(updatedTasks);
                     
                     // Sauvegarder vers l'API
                     await saveTasks(updatedTasks);
@@ -783,7 +1115,7 @@
                     setIsAuthenticated(true);
                     localStorage.setItem('authStatus', 'true');
                     setLoginError('');
-                    loadTasks(); // Charger les tâches après connexion
+                    loadData(); // Charger les tâches après connexion
                 } else {
                     setLoginError('Email ou mot de passe incorrect');
                 }
@@ -800,7 +1132,7 @@
                 setNewTask({...newTask, estimatedTime: time});
             };
             
-            // Couleurs pour les priorités
+            // Couleurs pour les statuts
             const getStatusColor = (status) => {
                 switch (status) {
                     case 'non-commencé': return 'bg-yellow-600 text-yellow-100';
@@ -808,6 +1140,13 @@
                     case 'terminé': return 'bg-green-600 text-green-100';
                     default: return 'bg-gray-600 text-gray-100';
                 }
+            };
+
+            // Navigation dans les semaines pour le planning hebdomadaire
+            const navigateWeek = (direction) => {
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() + (direction * 7));
+                setSelectedDate(newDate);
             };
             
             // Afficher le statut de synchronisation
@@ -926,6 +1265,44 @@
                                         <LoadingSpinner />
                                     ) : (
                                         <div>
+                                            {/* Planning Hebdomadaire */}
+                                            {currentPage === 'planning' && (
+                                                <div className="space-y-6 animate__animated animate__fadeIn">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h2 className="text-2xl font-bold text-blue-300">Planning Hebdomadaire</h2>
+                                                        
+                                                        <div className="flex items-center space-x-3">
+                                                            <button 
+                                                                onClick={() => navigateWeek(-1)}
+                                                                className="p-2 bg-slate-700 rounded-md hover:bg-slate-600 transition-colors"
+                                                            >
+                                                                ⬅️ Semaine précédente
+                                                            </button>
+                                                            
+                                                            <button
+                                                                onClick={() => setSelectedDate(new Date())}
+                                                                className="p-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                                                            >
+                                                                Aujourd'hui
+                                                            </button>
+                                                            
+                                                            <button 
+                                                                onClick={() => navigateWeek(1)}
+                                                                className="p-2 bg-slate-700 rounded-md hover:bg-slate-600 transition-colors"
+                                                            >
+                                                                Semaine suivante ➡️
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <WeeklyPlanner 
+                                                        weeklyTasks={weeklyTasks}
+                                                        saveWeeklyTasks={saveWeeklyTasks}
+                                                        selectedDate={selectedDate}
+                                                    />
+                                                </div>
+                                            )}
+                                        
                                             {/* Formulaire d'ajout de tâche */}
                                             {currentPage === 'ajouter' && (
                                                 <div className="bg-slate-700 p-6 rounded-lg mb-8 shadow-lg border border-slate-600 animate__animated animate__fadeIn">
@@ -952,19 +1329,19 @@
                                                             ></textarea>
                                                         </div>
                                                         
-<div>
-    <label className="block mb-2 text-blue-200">Lieu:</label>
-    <select
-        value={newTask.location}
-        onChange={(e) => setNewTask({...newTask, location: e.target.value})}
-        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-    >
-        <option value="maison">🏠 Maison</option>
-        <option value="garage">🔧 Garage</option>
-        <option value="automobile">🚗 Automobile</option>
-        <option value="extérieur">🌳 Extérieur</option>
-    </select>
-</div>
+                                                        <div>
+                                                            <label className="block mb-2 text-blue-200">Lieu:</label>
+                                                            <select
+                                                                value={newTask.location}
+                                                                onChange={(e) => setNewTask({...newTask, location: e.target.value})}
+                                                                className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                            >
+                                                                <option value="maison">🏠 Maison</option>
+                                                                <option value="garage">🔧 Garage</option>
+                                                                <option value="automobile">🚗 Automobile</option>
+                                                                <option value="extérieur">🌳 Extérieur</option>
+                                                            </select>
+                                                        </div>
                                                         
                                                         <div>
                                                             <label className="block mb-2 text-blue-200">Temps estimé:</label>
@@ -986,7 +1363,7 @@
                                             )}
                                             
                                             {/* Liste des tâches */}
-                                            {currentPage !== 'ajouter' && (
+                                            {currentPage !== 'ajouter' && currentPage !== 'planning' && (
                                                 <div className="space-y-6 animate__animated animate__fadeIn">
                                                     <h2 className="text-2xl font-bold mb-4 text-blue-300">
                                                         {currentPage === 'non-commencé' && "Tâches non commencées"}
@@ -1008,7 +1385,8 @@
                                                                 >
                                                                     <div className="flex justify-between items-start mb-2">
                                                                         <h3 className="text-xl font-semibold text-blue-200">{task.title}</h3>
-                                                                        <span className={`px-2 py-1 rounded-md text-xs ${getStatusColor(task.status)}`}>
+
+                                                                                                                                                <span className={`px-2 py-1 rounded-md text-xs ${getStatusColor(task.status)}`}>
                                                                             {task.status === 'non-commencé' && "Non commencé"}
                                                                             {task.status === 'en-cours' && "En cours"}
                                                                             {task.status === 'terminé' && "Terminé"}
@@ -1094,3 +1472,4 @@
     </script>
 </body>
 </html>
+                                                                
