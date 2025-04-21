@@ -952,51 +952,19 @@
                                                             ></textarea>
                                                         </div>
                                                         
-                                                        <div>
-                                                            <label className="block mb-2 text-blue-200">Lieu:</label>
-                                                            <div className="flex space-x-4">
-                                                                <label className="inline-flex items-center">
-                                                                    <input
-                                                                        type="radio"
-                                                                        value="maison"
-                                                                        checked={newTask.location === 'maison'}
-                                                                        onChange={() => setNewTask({...newTask, location: 'maison'})}
-                                                                        className="form-radio text-blue-500"
-                                                                    />
-                                                                    <span className="ml-2 text-gray-100">🏠 Maison</span>
-                                                                </label>
-                                                                <label className="inline-flex items-center">
-                                                                    <input
-                                                                        type="radio"
-                                                                        value="garage"
-                                                                        checked={newTask.location === 'garage'}
-                                                                        onChange={() => setNewTask({...newTask, location: 'garage'})}
-                                                                        className="form-radio text-blue-500"
-                                                                    />
-                                                                    <span className="ml-2 text-gray-100">🔧 Garage</span>
-                                                                </label>
-                                                                <label className="inline-flex items-center">
-                                                                    <input
-                                                                        type="radio"
-                                                                        value="automobile"
-                                                                        checked={newTask.location === 'automobile'}
-                                                                        onChange={() => setNewTask({...newTask, location: 'automobile'})}
-                                                                        className="form-radio text-blue-500"
-                                                                    />
-                                                                    <span className="ml-2 text-gray-100">🚗 Automobile</span>
-                                                                </label>
-                                                                <label className="inline-flex items-center">
-                                                                    <input
-                                                                        type="radio"
-                                                                        value="extérieur"
-                                                                        checked={newTask.location === 'extérieur'}
-                                                                        onChange={() => setNewTask({...newTask, location: 'extérieur'})}
-                                                                        className="form-radio text-blue-500"
-                                                                    />
-                                                                    <span className="ml-2 text-gray-100">🌳 Extérieur</span>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+<div>
+    <label className="block mb-2 text-blue-200">Lieu:</label>
+    <select
+        value={newTask.location}
+        onChange={(e) => setNewTask({...newTask, location: e.target.value})}
+        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+    >
+        <option value="maison">🏠 Maison</option>
+        <option value="garage">🔧 Garage</option>
+        <option value="automobile">🚗 Automobile</option>
+        <option value="extérieur">🌳 Extérieur</option>
+    </select>
+</div>
                                                         
                                                         <div>
                                                             <label className="block mb-2 text-blue-200">Temps estimé:</label>
