@@ -1,3 +1,6 @@
+Voici le code modifié avec l'ajout d'un menu latéral à gauche. J'ai remplacé la navigation horizontale par un menu latéral qui contient à la fois les boutons de navigation et les filtres :
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -171,6 +174,42 @@
             0% { transform: translate(0, 0); }
             100% { transform: translate(24px, 0); }
         }
+
+        /* Style du menu latéral */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 250px;
+            background-color: #1E293B;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 999;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Pour l'affichage mobile */
+        @media (max-width: 768px) {
+            .side-menu {
+                transform: translateX(-100%);
+            }
+            
+            .side-menu.open {
+                transform: translateX(0);
+            }
+            
+            .content-with-menu {
+                margin-left: 0;
+            }
+        }
+
+        /* Pour l'affichage desktop */
+        @media (min-width: 769px) {
+            .content-with-menu {
+                margin-left: 250px;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-gray-100 min-h-screen">
@@ -315,6 +354,127 @@
             </div>
         );
         
+        // Composant du menu latéral
+        const SideMenu = ({ isOpen, setIsOpen, currentPage, setCurrentPage, filter, setFilter, handleLogout }) => {
+            return (
+                <div className={`side-menu ${isOpen ? 'open' : ''} border-r border-slate-700`}>
+                    <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+                        <h2 className="text-xl font-bold text-blue-400">Menu</h2>
+                        <button 
+                            onClick={() => setIsOpen(false)} 
+                            className="text-gray-400 hover:text-white md:hidden"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <div className="p-4 space-y-6">
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => {
+                                    setCurrentPage('ajouter');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                            >
+                                <span className="mr-3">➕</span> Ajouter
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setCurrentPage('non-commencé');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'non-commencé' ? 'bg-yellow-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                            >
+                                <span className="mr-3">📋</span> Non commencé
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setCurrentPage('en-cours');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                            >
+                                <span className="mr-3">🔄</span> En cours
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setCurrentPage('terminé');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'terminé' ? 'bg-green-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                            >
+                                <span className="mr-3">✅</span> Terminé
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setCurrentPage('tout');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'tout' ? 'bg-purple-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                            >
+                                <span className="mr-3">🔍</span> Tout voir
+                            </button>
+                        </div>
+                        
+                        {currentPage !== 'ajouter' && (
+                            <div className="space-y-3 pt-4 border-t border-slate-700">
+                                <h3 className="text-lg font-semibold text-blue-300">Filtrer par:</h3>
+                                
+                                <button
+                                    onClick={() => setFilter('tous')}
+                                    className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${filter === 'tous' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                                >
+                                    Tous
+                                </button>
+                                
+                                <button
+                                    onClick={() => setFilter('maison')}
+                                    className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${filter === 'maison' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                                >
+                                    <span className="mr-3">🏠</span> Maison
+                                </button>
+                                
+                                <button
+                                    onClick={() => setFilter('garage')}
+                                    className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${filter === 'garage' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                                >
+                                    <span className="mr-3">🔧</span> Garage
+                                </button>
+                                
+                                <button
+                                    onClick={() => setFilter('automobile')}
+                                    className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${filter === 'automobile' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                                >
+                                    <span className="mr-3">🚗</span> Automobile
+                                </button>
+                                
+                                <button
+                                    onClick={() => setFilter('extérieur')}
+                                    className={`w-full flex items-center px-4 py-2 rounded-md transition-colors duration-300 ${filter === 'extérieur' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-gray-100'}`}
+                                >
+                                    <span className="mr-3">🌳</span> Extérieur
+                                </button>
+                            </div>
+                        )}
+                        
+                        <div className="pt-4 border-t border-slate-700">
+                            <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all duration-300"
+                            >
+                                <span className="mr-3">🚪</span> Déconnexion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
         // Composant Sélecteur de Temps
         const TimeSelector = ({ value, onChange }) => {
             // Convertir les minutes en composants de temps
@@ -450,6 +610,9 @@
         };
         
         const TaskManager = () => {
+            // État pour le menu latéral
+            const [menuOpen, setMenuOpen] = useState(false);
+            
             // État d'authentification
             const [isAuthenticated, setIsAuthenticated] = useState(() => {
                 return localStorage.getItem('authStatus') === 'true';
@@ -472,9 +635,9 @@
             const [newTask, setNewTask] = useState({
                 title: '',
                 description: '',
-                location: 'maison', // 'intérieur' ou 'extérieur'
+                location: 'maison',
                 estimatedTime: '',
-                status: 'non-commencé', // 'non-commencé', 'en-cours', 'terminé'
+                status: 'non-commencé',
             });
             
             const [currentPage, setCurrentPage] = useState('ajouter');
@@ -504,16 +667,16 @@
                 setLoading(false);
             };
             
-// Périodiquement vérifier les mises à jour (chaque 30 secondes)
-useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const intervalId = setInterval(() => {
-        loadTasks();
-    }, 60000);
-    
-    return () => clearInterval(intervalId);
-}, [isAuthenticated]);
+            // Périodiquement vérifier les mises à jour (1 minute)
+            useEffect(() => {
+                if (!isAuthenticated) return;
+                
+                const intervalId = setInterval(() => {
+                    loadTasks();
+                }, 60000);
+                
+                return () => clearInterval(intervalId);
+            }, [isAuthenticated]);
             
             // Animation pour les nouveaux éléments
             useEffect(() => {
@@ -591,19 +754,19 @@ useEffect(() => {
                 }
             };
 
-// Filtrer les tâches selon la page actuelle et les filtres
-const filteredTasks = tasks.filter(task => {
-    if (currentPage === 'en-cours' && task.status !== 'en-cours') return false;
-    if (currentPage === 'non-commencé' && task.status !== 'non-commencé') return false;
-    if (currentPage === 'terminé' && task.status !== 'terminé') return false;
-    
-    if (filter === 'maison' && task.location !== 'maison') return false;
-    if (filter === 'garage' && task.location !== 'garage') return false;
-    if (filter === 'automobile' && task.location !== 'automobile') return false;
-    if (filter === 'extérieur' && task.location !== 'extérieur') return false;
-    
-    return true;
-});
+            // Filtrer les tâches selon la page actuelle et les filtres
+            const filteredTasks = tasks.filter(task => {
+                if (currentPage === 'en-cours' && task.status !== 'en-cours') return false;
+                if (currentPage === 'non-commencé' && task.status !== 'non-commencé') return false;
+                if (currentPage === 'terminé' && task.status !== 'terminé') return false;
+                
+                if (filter === 'maison' && task.location !== 'maison') return false;
+                if (filter === 'garage' && task.location !== 'garage') return false;
+                if (filter === 'automobile' && task.location !== 'automobile') return false;
+                if (filter === 'extérieur' && task.location !== 'extérieur') return false;
+                
+                return true;
+            });
             
             // Fonction de connexion
             const handleLogin = () => {
@@ -675,330 +838,281 @@ const filteredTasks = tasks.filter(task => {
             };
 
             return (
-                <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-4 relative">
+                <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 relative">
                     <AnimatedBackground />
                     
-                    <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-700 relative z-10">
-                        <h1 className="text-3xl font-bold text-center mb-6 text-blue-400 animate__animated animate__fadeIn">
-                            Gestion des Tâches Familiales
-                        </h1>
-                        
-                        {/* Page de connexion */}
-                        {!isAuthenticated ? (
-                            <div className="max-w-md mx-auto bg-slate-700 p-8 rounded-lg shadow-xl border border-slate-600 login-appear">
-                                <h2 className="text-2xl font-semibold mb-6 text-center text-blue-300">Connexion</h2>
-                                
-                                <div className="space-y-6">
-                                    <div className="fade-in" style={{animationDelay: '0.1s'}}>
-                                        <label className="block mb-2 text-blue-200">Email:</label>
-                                        <input
-                                            type="email"
-                                            value={loginData.email}
-                                            onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                            placeholder="Votre email"
-                                        />
-                                    </div>
+                    {/* Menu latéral */}
+                    {isAuthenticated && (
+                        <SideMenu 
+                            isOpen={menuOpen} 
+                            setIsOpen={setMenuOpen}
+                            currentPage={currentPage}
+                            setCurrentPage={setCurrentPage}
+                            filter={filter}
+                            setFilter={setFilter}
+                            handleLogout={handleLogout}
+                        />
+                    )}
+                    
+                    {/* Bouton pour afficher le menu (mobile) */}
+                    {isAuthenticated && (
+                        <button 
+                            onClick={() => setMenuOpen(true)} 
+                            className="fixed top-4 left-4 z-50 bg-blue-600 text-white p-2 rounded-full md:hidden"
+                        >
+                            ☰
+                        </button>
+                    )}
+                    
+                    {/* Overlay pour fermer le menu sur mobile */}
+                    {menuOpen && (
+                        <div 
+                            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                            onClick={() => setMenuOpen(false)}
+                        />
+                    )}
+                    
+                    {/* Contenu principal */}
+                    <div className={`p-4 z-10 ${isAuthenticated ? 'content-with-menu' : ''}`}>
+                        <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-700 relative">
+                            <h1 className="text-3xl font-bold text-center mb-6 text-blue-400 animate__animated animate__fadeIn">
+                                Gestion des Tâches Familiales
+                            </h1>
+                            
+                            {/* Page de connexion */}
+                            {!isAuthenticated ? (
+                                <div className="max-w-md mx-auto bg-slate-700 p-8 rounded-lg shadow-xl border border-slate-600 login-appear">
+                                    <h2 className="text-2xl font-semibold mb-6 text-center text-blue-300">Connexion</h2>
                                     
-                                    <div className="fade-in" style={{animationDelay: '0.2s'}}>
-                                        <label className="block mb-2 text-blue-200">Mot de passe:</label>
-                                        <input
-                                            type="password"
-                                            value={loginData.password}
-                                            onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                            placeholder="Votre mot de passe"
-                                        />
-                                    </div>
-                                    
-                                    {loginError && (
-                                        <div className="bg-red-900 text-red-100 p-3 rounded text-center border border-red-700 animate__animated animate__headShake">
-                                            {loginError}
-                                        </div>
-                                    )}
-                                    
-                                    <button
-                                        onClick={handleLogin}
-                                        className="w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in bg-blue-600 text-white hover:bg-blue-700 pulse-animation"
-                                        style={{animationDelay: '0.4s'}}
-                                    >
-                                        Se connecter
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                {/* Bouton de déconnexion */}
-                                <div className="flex justify-end mb-4 animate__animated animate__fadeInRight">
-                                    <button
-                                        onClick={handleLogout}
-                                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all duration-300 shadow"
-                                    >
-                                        Déconnexion
-                                    </button>
-                                </div>
-                                
-{loading ? (
-    <LoadingSpinner />
-) : (
-    <div>
-        {/* Navigation */}
-        <div className="flex flex-wrap justify-between mb-6 bg-slate-700 rounded-lg p-2 shadow-lg animate__animated animate__fadeIn">
-                                            <button
-                                                onClick={() => setCurrentPage('ajouter')}
-                                                className={`px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'ajouter' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                            >
-                                                ➕ Ajouter
-                                            </button>
-                                            <button
-                                                onClick={() => setCurrentPage('non-commencé')}
-                                                className={`px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'non-commencé' ? 'bg-yellow-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                            >
-                                                📋 Non commencé
-                                            </button>
-                                            <button
-                                                onClick={() => setCurrentPage('en-cours')}
-                                                className={`px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'en-cours' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                            >
-                                                🔄 En cours
-                                            </button>
-                                            <button
-                                                onClick={() => setCurrentPage('terminé')}
-                                                className={`px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'terminé' ? 'bg-green-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                            >
-                                                ✅ Terminé
-                                            </button>
-                                            <button
-                                                onClick={() => setCurrentPage('tout')}
-                                                className={`px-4 py-2 rounded-md transition-colors duration-300 ${currentPage === 'tout' ? 'bg-purple-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-                                            >
-                                                🔍 Tout voir
-                                            </button>
+                                    <div className="space-y-6">
+                                        <div className="fade-in" style={{animationDelay: '0.1s'}}>
+                                            <label className="block mb-2 text-blue-200">Email:</label>
+                                            <input
+                                                type="email"
+                                                value={loginData.email}
+                                                onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                placeholder="Votre email"
+                                            />
                                         </div>
                                         
-{/* Filtres - ne s'affiche pas dans la section "ajouter" */}
-{currentPage !== 'ajouter' && (
-    <div className="mb-6 bg-slate-700 p-3 rounded-lg shadow-lg animate__animated animate__fadeIn">
-        <h3 className="text-blue-300 mb-2">Filtrer par:</h3>
-        <div className="flex space-x-4">
-            <button
-                onClick={() => setFilter('tous')}
-                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'tous' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-            >
-                Tous
-            </button>
-            <button
-                onClick={() => setFilter('maison')}
-                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'maison' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-            >
-                🏠 Maison
-            </button>
-            <button
-                onClick={() => setFilter('garage')}
-                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'garage' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-            >
-                🔧 Garage
-            </button>
-            <button
-                onClick={() => setFilter('automobile')}
-                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'automobile' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-            >
-                🚗 Automobile
-            </button>
-            <button
-                onClick={() => setFilter('extérieur')}
-                className={`px-3 py-1 rounded-md transition-colors duration-300 ${filter === 'extérieur' ? 'bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-gray-100'}`}
-            >
-                🌳 Extérieur
-            </button>
-        </div>
-    </div>
-)}
+                                        <div className="fade-in" style={{animationDelay: '0.2s'}}>
+                                            <label className="block mb-2 text-blue-200">Mot de passe:</label>
+                                            <input
+                                                type="password"
+                                                value={loginData.password}
+                                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                placeholder="Votre mot de passe"
+                                            />
+                                        </div>
                                         
-                                        {/* Formulaire d'ajout de tâche */}
-                                        {currentPage === 'ajouter' && (
-                                            <div className="bg-slate-700 p-6 rounded-lg mb-8 shadow-lg border border-slate-600 animate__animated animate__fadeIn">
-                                                <h2 className="text-2xl font-bold mb-4 text-blue-300">Ajouter une nouvelle tâche</h2>
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className="block mb-2 text-blue-200">Titre:</label>
-                                                        <input
-                                                            type="text"
-                                                            value={newTask.title}
-                                                            onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                                                            placeholder="Titre de la tâche"
-                                                        />
-                                                    </div>
-                                                    
-                                                    <div>
-                                                        <label className="block mb-2 text-blue-200">Description:</label>
-                                                        <textarea
-                                                            value={newTask.description}
-                                                            onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 h-24"
-                                                            placeholder="Description détaillée de la tâche"
-                                                        ></textarea>
-                                                    </div>
-                                                    
-<div>
-    <label className="block mb-2 text-blue-200">Lieu:</label>
-    <div className="flex space-x-4">
-        <label className="inline-flex items-center">
-            <input
-                type="radio"
-                value="maison"
-                checked={newTask.location === 'maison'}
-                onChange={() => setNewTask({...newTask, location: 'maison'})}
-                className="form-radio text-blue-500"
-            />
-            <span className="ml-2 text-gray-100">🏠 Maison</span>
-        </label>
-        <label className="inline-flex items-center">
-            <input
-                type="radio"
-                value="garage"
-                checked={newTask.location === 'garage'}
-                onChange={() => setNewTask({...newTask, location: 'garage'})}
-                className="form-radio text-blue-500"
-            />
-            <span className="ml-2 text-gray-100">🔧 Garage</span>
-        </label>
-        <label className="inline-flex items-center">
-            <input
-                type="radio"
-                value="automobile"
-                checked={newTask.location === 'automobile'}
-                onChange={() => setNewTask({...newTask, location: 'automobile'})}
-                className="form-radio text-blue-500"
-            />
-            <span className="ml-2 text-gray-100">🚗 Automobile</span>
-        </label>
-        <label className="inline-flex items-center">
-            <input
-                type="radio"
-                value="extérieur"
-                checked={newTask.location === 'extérieur'}
-                onChange={() => setNewTask({...newTask, location: 'extérieur'})}
-                className="form-radio text-blue-500"
-            />
-            <span className="ml-2 text-gray-100">🌳 Extérieur</span>
-        </label>
-    </div>
-</div>
-                                                    
-                                                    <div>
-                                                        <label className="block mb-2 text-blue-200">Temps estimé:</label>
-                                                        <TimeSelector 
-                                                            value={newTask.estimatedTime} 
-                                                            onChange={handleEstimatedTimeChange}
-                                                        />
-                                                    </div>
-                                                    
-                                                    <button
-                                                        onClick={handleAddTask}
-                                                        className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300 shadow-lg"
-                                                        disabled={!newTask.title.trim()}
-                                                    >
-                                                        Ajouter la tâche
-                                                    </button>
-                                                </div>
+                                        {loginError && (
+                                            <div className="bg-red-900 text-red-100 p-3 rounded text-center border border-red-700 animate__animated animate__headShake">
+                                                {loginError}
                                             </div>
                                         )}
                                         
-                                        {/* Liste des tâches */}
-                                        {currentPage !== 'ajouter' && (
-                                            <div className="space-y-6 animate__animated animate__fadeIn">
-                                                <h2 className="text-2xl font-bold mb-4 text-blue-300">
-                                                    {currentPage === 'non-commencé' && "Tâches non commencées"}
-                                                    {currentPage === 'en-cours' && "Tâches en cours"}
-                                                    {currentPage === 'terminé' && "Tâches terminées"}
-                                                    {currentPage === 'tout' && "Toutes les tâches"}
-                                                </h2>
-                                                
-                                                {filteredTasks.length === 0 ? (
-                                                    <div className="bg-slate-700 p-6 rounded-lg text-center text-gray-400">
-                                                        Aucune tâche à afficher
+                                        <button
+                                            onClick={handleLogin}
+                                            className="w-full py-3 px-4 rounded-md transition-all duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 fade-in bg-blue-600 text-white hover:bg-blue-700 pulse-animation"
+                                            style={{animationDelay: '0.4s'}}
+                                        >
+                                            Se connecter
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    {loading ? (
+                                        <LoadingSpinner />
+                                    ) : (
+                                        <div>
+                                            {/* Formulaire d'ajout de tâche */}
+                                            {currentPage === 'ajouter' && (
+                                                <div className="bg-slate-700 p-6 rounded-lg mb-8 shadow-lg border border-slate-600 animate__animated animate__fadeIn">
+                                                    <h2 className="text-2xl font-bold mb-4 text-blue-300">Ajouter une nouvelle tâche</h2>
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="block mb-2 text-blue-200">Titre:</label>
+                                                            <input
+                                                                type="text"
+                                                                value={newTask.title}
+                                                                onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                                                                className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                                                                placeholder="Titre de la tâche"
+                                                            />
+                                                        </div>
+                                                        
+                                                        <div>
+                                                            <label className="block mb-2 text-blue-200">Description:</label>
+                                                            <textarea
+                                                                value={newTask.description}
+                                                                onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                                                                className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 h-24"
+                                                                placeholder="Description détaillée de la tâche"
+                                                            ></textarea>
+                                                        </div>
+                                                        
+                                                        <div>
+                                                            <label className="block mb-2 text-blue-200">Lieu:</label>
+                                                            <div className="flex space-x-4">
+                                                                <label className="inline-flex items-center">
+                                                                    <input
+                                                                        type="radio"
+                                                                        value="maison"
+                                                                        checked={newTask.location === 'maison'}
+                                                                        onChange={() => setNewTask({...newTask, location: 'maison'})}
+                                                                        className="form-radio text-blue-500"
+                                                                    />
+                                                                    <span className="ml-2 text-gray-100">🏠 Maison</span>
+                                                                </label>
+                                                                <label className="inline-flex items-center">
+                                                                    <input
+                                                                        type="radio"
+                                                                        value="garage"
+                                                                        checked={newTask.location === 'garage'}
+                                                                        onChange={() => setNewTask({...newTask, location: 'garage'})}
+                                                                        className="form-radio text-blue-500"
+                                                                    />
+                                                                    <span className="ml-2 text-gray-100">🔧 Garage</span>
+                                                                </label>
+                                                                <label className="inline-flex items-center">
+                                                                    <input
+                                                                        type="radio"
+                                                                        value="automobile"
+                                                                        checked={newTask.location === 'automobile'}
+                                                                        onChange={() => setNewTask({...newTask, location: 'automobile'})}
+                                                                        className="form-radio text-blue-500"
+                                                                    />
+                                                                    <span className="ml-2 text-gray-100">🚗 Automobile</span>
+                                                                </label>
+                                                                <label className="inline-flex items-center">
+                                                                    <input
+                                                                        type="radio"
+                                                                        value="extérieur"
+                                                                        checked={newTask.location === 'extérieur'}
+                                                                        onChange={() => setNewTask({...newTask, location: 'extérieur'})}
+                                                                        className="form-radio text-blue-500"
+                                                                    />
+                                                                    <span className="ml-2 text-gray-100">🌳 Extérieur</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div>
+                                                            <label className="block mb-2 text-blue-200">Temps estimé:</label>
+                                                            <TimeSelector 
+                                                                value={newTask.estimatedTime} 
+                                                                onChange={handleEstimatedTimeChange}
+                                                            />
+                                                        </div>
+                                                        
+                                                        <button
+                                                            onClick={handleAddTask}
+                                                            className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-300 shadow-lg"
+                                                            disabled={!newTask.title.trim()}
+                                                        >
+                                                            Ajouter la tâche
+                                                        </button>
                                                     </div>
-                                                ) : (
-                                                    <div className="grid gap-6 md:grid-cols-2">
-                                                        {filteredTasks.map(task => (
-                                                            <div
-                                                                key={task.id}
-                                                                className={`bg-slate-700 rounded-lg p-4 border border-slate-600 shadow-lg task-item ${animated[task.id] ? 'fade-in' : ''}`}
-                                                            >
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <h3 className="text-xl font-semibold text-blue-200">{task.title}</h3>
-                                                                    <span className={`px-2 py-1 rounded-md text-xs ${getStatusColor(task.status)}`}>
-                                                                        {task.status === 'non-commencé' && "Non commencé"}
-                                                                        {task.status === 'en-cours' && "En cours"}
-                                                                        {task.status === 'terminé' && "Terminé"}
-                                                                    </span>
-                                                                </div>
-                                                                
-                                                                <div className="mb-3 text-gray-300">
-                                                                    {task.description || <span className="text-gray-500 italic">Pas de description</span>}
-                                                                </div>
-                                                                
-                                                                <div className="flex items-center text-sm text-gray-400 mb-4">
-<span className="mr-4">
-    {task.location === 'maison' ? '🏠 Maison' : 
-     task.location === 'garage' ? '🔧 Garage' : 
-     task.location === 'automobile' ? '🚗 Automobile' : 
-     '🌳 Extérieur'}
-</span>
-                                                                    <span>
-                                                                        ⏱️ {formatTime(task.estimatedTime) || 'Non spécifié'}
-                                                                    </span>
-                                                                </div>
-                                                                
-                                                                <div className="flex justify-between pt-3 border-t border-slate-600">
-                                                                    <div className="space-x-2">
-                                                                        {task.status !== 'non-commencé' && (
-                                                                            <button
-                                                                                onClick={() => handleStatusChange(task.id, 'non-commencé')}
-                                                                                className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
-                                                                            >
-                                                                                Non commencé
-                                                                            </button>
-                                                                        )}
-                                                                        
-                                                                        {task.status !== 'en-cours' && (
-                                                                            <button
-                                                                                onClick={() => handleStatusChange(task.id, 'en-cours')}
-                                                                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                                                                            >
-                                                                                En cours
-                                                                            </button>
-                                                                        )}
-                                                                        
-                                                                        {task.status !== 'terminé' && (
-                                                                            <button
-                                                                                onClick={() => handleStatusChange(task.id, 'terminé')}
-                                                                                className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                                                            >
-                                                                                Terminé
-                                                                            </button>
-                                                                        )}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Liste des tâches */}
+                                            {currentPage !== 'ajouter' && (
+                                                <div className="space-y-6 animate__animated animate__fadeIn">
+                                                    <h2 className="text-2xl font-bold mb-4 text-blue-300">
+                                                        {currentPage === 'non-commencé' && "Tâches non commencées"}
+                                                        {currentPage === 'en-cours' && "Tâches en cours"}
+                                                        {currentPage === 'terminé' && "Tâches terminées"}
+                                                        {currentPage === 'tout' && "Toutes les tâches"}
+                                                    </h2>
+                                                    
+                                                    {filteredTasks.length === 0 ? (
+                                                        <div className="bg-slate-700 p-6 rounded-lg text-center text-gray-400">
+                                                            Aucune tâche à afficher
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid gap-6 md:grid-cols-2">
+                                                            {filteredTasks.map(task => (
+                                                                <div
+                                                                    key={task.id}
+                                                                    className={`bg-slate-700 rounded-lg p-4 border border-slate-600 shadow-lg task-item ${animated[task.id] ? 'fade-in' : ''}`}
+                                                                >
+                                                                    <div className="flex justify-between items-start mb-2">
+                                                                        <h3 className="text-xl font-semibold text-blue-200">{task.title}</h3>
+                                                                        <span className={`px-2 py-1 rounded-md text-xs ${getStatusColor(task.status)}`}>
+                                                                            {task.status === 'non-commencé' && "Non commencé"}
+                                                                            {task.status === 'en-cours' && "En cours"}
+                                                                            {task.status === 'terminé' && "Terminé"}
+                                                                        </span>
                                                                     </div>
                                                                     
-                                                                    <button
-                                                                        onClick={() => handleDeleteTask(task.id)}
-                                                                        className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                                                                    >
-                                                                        Supprimer
-                                                                    </button>
+                                                                    <div className="mb-3 text-gray-300">
+                                                                        {task.description || <span className="text-gray-500 italic">Pas de description</span>}
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex items-center text-sm text-gray-400 mb-4">
+                                                                        <span className="mr-4">
+                                                                            {task.location === 'maison' ? '🏠 Maison' : 
+                                                                            task.location === 'garage' ? '🔧 Garage' : 
+                                                                            task.location === 'automobile' ? '🚗 Automobile' : 
+                                                                            '🌳 Extérieur'}
+                                                                        </span>
+                                                                        <span>
+                                                                            ⏱️ {formatTime(task.estimatedTime) || 'Non spécifié'}
+                                                                        </span>
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex justify-between pt-3 border-t border-slate-600">
+                                                                        <div className="space-x-2">
+                                                                            {task.status !== 'non-commencé' && (
+                                                                                <button
+                                                                                    onClick={() => handleStatusChange(task.id, 'non-commencé')}
+                                                                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                                                                >
+                                                                                    Non commencé
+                                                                                </button>
+                                                                            )}
+                                                                            
+                                                                            {task.status !== 'en-cours' && (
+                                                                                <button
+                                                                                    onClick={() => handleStatusChange(task.id, 'en-cours')}
+                                                                                    className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                                                                                >
+                                                                                    En cours
+                                                                                </button>
+                                                                            )}
+                                                                            
+                                                                            {task.status !== 'terminé' && (
+                                                                                <button
+                                                                                    onClick={() => handleStatusChange(task.id, 'terminé')}
+                                                                                    className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                                                                >
+                                                                                    Terminé
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                        
+                                                                        <button
+                                                                            onClick={() => handleDeleteTask(task.id)}
+                                                                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                                                                        >
+                                                                            Supprimer
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     
                     {/* Statut de synchronisation */}
